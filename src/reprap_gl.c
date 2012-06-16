@@ -112,8 +112,8 @@ _gl_reshape_cb(int w, int h)
     c3context_view_get_at(c3, 0)->size = size;
 
     if (fxaa) {
-    	glUseProgram((GLuint)fxaa->pid);
-    	GLCHECK(glUniform2fv((GLuint)fxaa->params.e[0].pid, 1, size.n));
+    	glUseProgram(C3APIO_INT(fxaa->pid));
+    	GLCHECK(glUniform2fv(C3APIO_INT(fxaa->params.e[0].pid), 1, size.n));
     	glUseProgram(0);
     }
 
@@ -170,7 +170,7 @@ _gl_display_cb(void)		/* function called whenever redisplay needed */
 		 * Draw in FBO object
 		 */
 		c3context_view_p view = c3context_view_get(c3);
-		glBindFramebuffer(GL_FRAMEBUFFER, (GLuint)view->bid);
+		glBindFramebuffer(GL_FRAMEBUFFER, C3APIO_INT(view->bid));
 		// draw (without glutSwapBuffers)
 		dumpError("glBindFramebuffer fbo");
 		glViewport(0, 0, view->size.x, view->size.y);
@@ -219,9 +219,9 @@ _gl_display_cb(void)		/* function called whenever redisplay needed */
 			c3mat4 b = c3mat4_mul(&light->projection, (c3mat4p)bias);
 			c3mat4 tex = c3mat4_mul(&light->cam.mtx, &b);
 
-			GLCHECK(glUseProgram((GLuint)scene->pid));
+			GLCHECK(glUseProgram(C3APIO_INT(scene->pid)));
 			glUniformMatrix4fv(
-					(GLuint)scene->params.e[uniform_shadowMatrix].pid,
+					C3APIO_INT(scene->params.e[uniform_shadowMatrix].pid),
 					1, GL_FALSE, tex.n);
 		} else {
 			glCullFace(GL_FRONT);
@@ -653,19 +653,19 @@ gl_init(
         		"gfx/scene.fs", C3_PROGRAM_LOAD_UNIFORM);
         c3gl_program_load(scene);
 
-		GLCHECK(glUseProgram((GLuint)scene->pid));
+		GLCHECK(glUseProgram(C3APIO_INT(scene->pid)));
         GLCHECK(glUniform1i(
-					(GLuint)scene->params.e[uniform_ShadowMap].pid, 7));
+        		C3APIO_INT(scene->params.e[uniform_ShadowMap].pid), 7));
 		GLCHECK(glUniform1i(
-					(GLuint)scene->params.e[uniform_tex0].pid, 0));
+				C3APIO_INT(scene->params.e[uniform_tex0].pid), 0));
 		c3vec2 isize = c3vec2f(1.0f / c3->views.e[1].size.x,
 					1.0f / c3->views.e[1].size.y);
 		GLCHECK(glUniform2fv(
-					(GLuint)scene->params.e[uniform_pixelOffset].pid, 1,
+				C3APIO_INT(scene->params.e[uniform_pixelOffset].pid), 1,
 					isize.n));
 		glActiveTexture(GL_TEXTURE7);
 		GLCHECK(glBindTexture(GL_TEXTURE_2D,
-					(GLuint)shadow.buffers[C3GL_FBO_DEPTH_TEX].bid));
+				C3APIO_INT(shadow.buffers[C3GL_FBO_DEPTH_TEX].bid)));
 		glActiveTexture(GL_TEXTURE0);
     }
     {

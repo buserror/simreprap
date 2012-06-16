@@ -1,7 +1,7 @@
 # 
-# 	Copyright 2008, 2009 Michel Pollet <buserror@gmail.com>
+# 	Copyright 2008, 2012 Michel Pollet <buserror@gmail.com>
 #
-#	This file is part of simavr.
+#	This file is part of simreprap.
 #
 #	simavr is free software: you can redistribute it and/or modify
 #	it under the terms of the GNU General Public License as published by
@@ -19,40 +19,40 @@
 target=	reprap
 firm_src = ${wildcard atmega*.c}
 firmware = ${firm_src:.c=.hex}
-simavr = ../../
 
-LIBC3	= ../shared/libc3
+SIMAVR	= shared/simavr
+LIBC3	= shared/libc3
 
 IPATH = .
 IPATH += src
-IPATH += ../parts
-IPATH += ../shared
 IPATH += $(LIBC3)/src
 IPATH += $(LIBC3)/srcgl
-IPATH += ${simavr}/include
-IPATH += ${simavr}/simavr/sim
+IPATH += ${SIMAVR}/include
+IPATH += ${SIMAVR}/simavr/sim
+IPATH += ${SIMAVR}/examples/parts
+IPATH += ${SIMAVR}/examples/shared
 
 VPATH = src
-VPATH += ../parts
-VPATH += ../shared
+VPATH += ${SIMAVR}/examples/parts
+VPATH += ${SIMAVR}/examples/shared
 
 # for the Open Motion Controller board
 CPPFLAGS += -DMOTHERBOARD=91
 CPPFLAGS += ${shell pkg-config --cflags pangocairo}
 
-include ../Makefile.opengl
+include ${SIMAVR}/examples/Makefile.opengl
 
 LDFLAGS += ${shell pkg-config --libs pangocairo}
 LDFLAGS += -lpthread -lutil -ldl
 LDFLAGS += -lm
-LDFLAGS += -rpath $(LIBC3)/${OBJ}/.libs -L$(LIBC3)/${OBJ}/.libs -lc3 -lc3gl
+LDFLAGS += -Wl,-rpath $(LIBC3)/${OBJ}/.libs -L$(LIBC3)/${OBJ}/.libs -lc3 -lc3gl
+LDFLAGS += -Wl,-rpath ${SIMAVR}/simavr/${OBJ} -L${SIMAVR}/simavr/${OBJ} 
 
 CPPFLAGS	+= ${patsubst %,-I%,${subst :, ,${IPATH}}}
 
-
 all: obj ${firmware} ${target}
 
-include ${simavr}/Makefile.common
+include ${SIMAVR}/Makefile.common
 
 board = ${OBJ}/${target}.elf
 
@@ -65,14 +65,18 @@ ${board} : ${OBJ}/stepper.o
 ${board} : ${OBJ}/${target}.o
 ${board} : ${OBJ}/${target}_gl.o
 
+build-simavr:
+	$(MAKE) -C $(SIMAVR) CC="$(CC)" CFLAGS="$(CFLAGS)" build-simavr
+
 build-libc3:
 	$(MAKE) -C $(LIBC3) CC="$(CC)" CFLAGS="$(CFLAGS)"
 
-${target}:  build-libc3 ${board}
+${target}:  build-simavr build-libc3 ${board}
 	@echo $@ done
 
 clean: clean-${OBJ}
 	rm -rf *.a *.axf ${target} *.vcd
 	$(MAKE) -C $(LIBC3) CC="$(CC)" CFLAGS="$(CFLAGS)" clean
+	$(MAKE) -C $(SIMAVR)/simavr CC="$(CC)" CFLAGS="$(CFLAGS)" clean
 	
 
