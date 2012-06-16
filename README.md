@@ -30,9 +30,10 @@ I aren't needed, and I also don't add stuff that isn't tested.
 There is an ASCII STL file loader that works, and a few other bit of geometry related
 helpers. 
 
-It's currently used in one 'serious' project and also in my [3D printer simulator](https://github.com/buserror-uk/simavr/tree/master/examples/board_reprap),
-as part of simavr. There you cal also find the "opengl renderer" set of callbacks, in the
-near future, this layer will be part of a *libc3-gl* companion library. 
+It's currently used in one 'serious' project and also in my [3D printer simulator](https://github.com/buserror-uk/simreprap). 
+libc3 also builds a companion library called *libc3-gl* that implements a default OpenGL
+renderer 'driver' as a set of callbacks.  *libc3-gl* does the 'dirty' work for loading
+shaders, creating and maintaining frame buffer objects, vertex buffer objects etc.
 
 General Roadmap
 ---------------
