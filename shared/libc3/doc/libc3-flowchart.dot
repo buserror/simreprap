@@ -18,6 +18,15 @@ digraph g {
 		</font></td></tr>
 		</table>
 	>];
+	c3gl [shape=none, label=<
+		<table border="1" cellborder="0" cellpadding="4">
+		<tr><td>c3gl</td></tr>
+		<tr><td color="gray" border="1" align="center"><font point-size="10">
+		OpenGL/ES layer to render<br/> 
+		libc3 geometry
+		</font></td></tr>
+		</table>
+	>];
 	c3context_view [shape=none, label=<
 		<table border="1" cellborder="0" cellpadding="4">
 		<tr><td>c3context_view</td></tr>
@@ -182,6 +191,10 @@ digraph g {
 		</font></td></tr>
 		</table>
 	>];
+
+	{ rank = same;  c3context; c3gl; }
+	c3context -> c3gl [ weight=0.1, color="gray" ];
+	c3gl -> c3context [ weight=0.1, color="gray" ];
 	c3context -> c3context_view;
 	c3context -> c3object [style=bold];
 	c3context -> c3pixels [style=dashed];
