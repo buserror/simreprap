@@ -37,6 +37,9 @@ typedef uint16_t	c3index_t, *c3index_p;
  */
 typedef void * c3apiobject_t;
 
+#define C3APIO_INT(__v)	(int)(((intptr_t)(__v)))
+#define C3APIO(__v)	(c3apiobject_t)(((intptr_t)(__v)))
+
 //! Bounding box
 typedef struct c3bbox_t {
 	c3vec3	min, max;

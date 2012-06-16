@@ -210,7 +210,7 @@ static inline c3geometry_type_t
 c3geometry_type(uint32_t type, int subtype)
 {
 	c3geometry_type_t r;// = { .type = type, .subtype = subtype }; // older gcc <4.6 doesn't like this
-	r.type = type; r.subtype = (c3apiobject_t)subtype;
+	r.type = type; r.subtype = C3APIO(subtype);
 	return r;
 }
 

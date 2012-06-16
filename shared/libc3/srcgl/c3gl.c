@@ -71,63 +71,63 @@ c3gl_program_load(
 		if (p->verbose)
 			printf("%s compiling shader %s\n", __func__, s->name->str);
 
-		s->sid = (c3apiobject_t)glCreateShader(s->type);
+		s->sid = C3APIO(glCreateShader(s->type));
 		const GLchar * pgm = s->shader->str;
-		glShaderSource((GLuint)s->sid, 1, &pgm, NULL);
+		glShaderSource(C3APIO_INT(s->sid), 1, &pgm, NULL);
 
-		glCompileShader((GLuint)s->sid);
+		glCompileShader(C3APIO_INT(s->sid));
 
 		GLint status;
-		glGetShaderiv((GLuint)s->sid, GL_COMPILE_STATUS, &status);
+		glGetShaderiv(C3APIO_INT(s->sid), GL_COMPILE_STATUS, &status);
 
 		if (status != GL_FALSE)
 			continue;
 
 		GLint infoLogLength;
-		glGetShaderiv((GLuint)s->sid, GL_INFO_LOG_LENGTH, &infoLogLength);
+		glGetShaderiv(C3APIO_INT(s->sid), GL_INFO_LOG_LENGTH, &infoLogLength);
 
 		p->log = str_alloc(infoLogLength);
-		glGetShaderInfoLog((GLuint)s->sid, infoLogLength, NULL, p->log->str);
+		glGetShaderInfoLog(C3APIO_INT(s->sid), infoLogLength, NULL, p->log->str);
 
 		fprintf(stderr, "%s compile %s: %s\n", __func__, s->name->str, p->log->str);
 		break;
 	}
 	if (p->log)
 		return -1;
-    p->pid = (c3apiobject_t)glCreateProgram();
+    p->pid = C3APIO(glCreateProgram());
 
 	for (int si = 0; si < p->shaders.count && !p->log; si++) {
 		c3shader_p s = &p->shaders.e[si];
 
-    	glAttachShader((GLuint)p->pid, (GLuint)s->sid);
+    	glAttachShader(C3APIO_INT(p->pid), C3APIO_INT(s->sid));
 	}
-    glLinkProgram((GLuint)p->pid);
+    glLinkProgram(C3APIO_INT(p->pid));
 
     GLint status;
-    glGetProgramiv((GLuint)p->pid, GL_LINK_STATUS, &status);
+    glGetProgramiv(C3APIO_INT(p->pid), GL_LINK_STATUS, &status);
 
 	for (int si = 0; si < p->shaders.count && !p->log; si++) {
 		c3shader_p s = &p->shaders.e[si];
 
-		glDetachShader((GLuint)p->pid, (GLuint)s->sid);
-		glDeleteShader((GLuint)s->sid);
+		glDetachShader(C3APIO_INT(p->pid), C3APIO_INT(s->sid));
+		glDeleteShader(C3APIO_INT(s->sid));
     	s->sid = 0;
 	}
 
     if (status == GL_FALSE) {
         GLint infoLogLength;
-        glGetProgramiv((GLuint)p->pid, GL_INFO_LOG_LENGTH, &infoLogLength);
+        glGetProgramiv(C3APIO_INT(p->pid), GL_INFO_LOG_LENGTH, &infoLogLength);
 
 		p->log = str_alloc(infoLogLength);
 
-        glGetProgramInfoLog((GLuint)p->pid, infoLogLength, NULL, p->log->str);
+        glGetProgramInfoLog(C3APIO_INT(p->pid), infoLogLength, NULL, p->log->str);
 		fprintf(stderr, "%s link %s: %s\n", __func__, p->name->str, p->log->str);
 
 		goto error;
     }
     for (int pi = 0; pi < p->params.count; pi++) {
     	c3program_param_p pa = &p->params.e[pi];
-    	pa->pid = (c3apiobject_t)glGetUniformLocation((GLuint)p->pid, pa->name->str);
+    	pa->pid = C3APIO(glGetUniformLocation(C3APIO_INT(p->pid), pa->name->str));
     	if (pa->pid == (c3apiobject_t)-1) {
     		fprintf(stderr, "%s %s: parameter '%s' not found\n",
     				__func__, p->name->str, pa->name->str);
@@ -135,7 +135,7 @@ c3gl_program_load(
         	if (p->verbose)
         		printf("%s %s load parameter [%d]'%s'=%d\n", __func__,
         				p->name->str, pi, pa->name->str,
-        				(int)pa->pid);
+        				C3APIO_INT(pa->pid));
     }
 
     c3program_purge(p);
@@ -143,7 +143,7 @@ c3gl_program_load(
 error:
 	c3program_purge(p);
 	if (p->pid)
-		glDeleteProgram((GLuint)p->pid);
+		glDeleteProgram(C3APIO_INT(p->pid));
 	p->pid = 0;
 	return -1;
 }
@@ -183,12 +183,12 @@ _c3_load_pixels(
 		if (pix->normalize)
 			GLCHECK(glGenerateMipmap(mode));
 
-		pix->texture = (c3apiobject_t)texID;
+		pix->texture = C3APIO(texID);
 		pix->dirty = 1;
 	}
 	if (pix->dirty) {
 		pix->dirty = 0;
-		GLCHECK(glBindTexture(mode, (GLuint)pix->texture));
+		GLCHECK(glBindTexture(mode, C3APIO_INT(pix->texture)));
 		glTexImage2D(mode, 0,
 				pix->format == C3PIXEL_A ? GL_ALPHA16 : GL_RGBA8,
 				pix->w, pix->h, 0,
@@ -209,10 +209,9 @@ _c3_create_buffer(
         size_t dataSize,
         GLuint	* out)
 {
-	GLuint bid;
-	glGenBuffers(1, &bid);
+	glGenBuffers(1, out);
 
-	GLCHECK(glBindBuffer(GL_ARRAY_BUFFER, bid));
+	GLCHECK(glBindBuffer(GL_ARRAY_BUFFER, *out));
 	GLCHECK(glBufferData(GL_ARRAY_BUFFER,
 			dataSize,
 	        data,
@@ -229,9 +228,9 @@ _c3_load_vbo(
 	if (!g->bid) {
 		GLuint	vao;
 		glGenVertexArrays(1, &vao);
-		g->bid = (c3apiobject_t)vao;
+		g->bid = C3APIO(vao);
 	}
-	glBindVertexArray((GLuint)g->bid);
+	glBindVertexArray(C3APIO_INT(g->bid));
 
 	/*
 	 * Use 'realloc' on the array as it frees the data, but leaves 'count'
@@ -246,7 +245,7 @@ _c3_load_vbo(
 				g->vertice.e, g->vertice.count * sizeof(g->vertice.e[0]),
 				&bid);
 		glVertexPointer(3, GL_FLOAT, 0, (void*)0);
-		g->vertice.buffer.bid = (c3apiobject_t)bid;
+		g->vertice.buffer.bid = C3APIO(bid);
 		if (!g->vertice.buffer.mutable)
 			c3vertex_array_realloc(&g->vertice, 0);
 		g->vertice.buffer.dirty = 0;
@@ -259,7 +258,7 @@ _c3_load_vbo(
 				g->textures.e, g->textures.count * sizeof(g->textures.e[0]),
 				&bid);
 		glTexCoordPointer(2, GL_FLOAT, 0, (void*)0);
-		g->textures.buffer.bid = (c3apiobject_t)bid;
+		g->textures.buffer.bid = C3APIO(bid);
 		if (!g->textures.buffer.mutable)
 			c3tex_array_free(&g->textures);
 		g->textures.buffer.dirty = 0;
@@ -272,7 +271,7 @@ _c3_load_vbo(
 				g->normals.e, g->normals.count * sizeof(g->normals.e[0]),
 				&bid);
 		glNormalPointer(GL_FLOAT, 0, (void*) 0);
-		g->normals.buffer.bid = (c3apiobject_t)bid;
+		g->normals.buffer.bid = C3APIO(bid);
 		if (!g->normals.buffer.mutable)
 			c3vertex_array_free(&g->normals);
 		g->normals.buffer.dirty = 0;
@@ -285,7 +284,7 @@ _c3_load_vbo(
 				g->colorf.e, g->colorf.count * sizeof(g->colorf.e[0]),
 				&bid);
 		glColorPointer(4, GL_FLOAT, 0, (void*) 0);
-		g->colorf.buffer.bid = (c3apiobject_t)bid;
+		g->colorf.buffer.bid = C3APIO(bid);
 		if (!g->colorf.buffer.mutable)
 			c3colorf_array_free(&g->colorf);
 		g->colorf.buffer.dirty = 0;
@@ -299,7 +298,7 @@ _c3_load_vbo(
         		g->indices.count * sizeof(g->indices.e[0]),
         		g->indices.e,
         		g->indices.buffer.mutable ? GL_DYNAMIC_DRAW : GL_STATIC_DRAW);
-		g->indices.buffer.bid = (c3apiobject_t)bid;
+		g->indices.buffer.bid = C3APIO(bid);
 		if (!g->indices.buffer.mutable)
 			c3indices_array_realloc(&g->indices, 0);
 		g->indices.buffer.dirty = 0;
@@ -330,7 +329,7 @@ _c3_geometry_project(
 		}	break;
 		case C3_LIGHT_TYPE: {
 			c3light_p l = (c3light_p)g;
-			GLuint lid = GL_LIGHT0 + (int)l->light_id;
+			GLuint lid = GL_LIGHT0 + C3APIO_INT(l->light_id);
 			if (l->color.specular.w > 0)
 				glLightfv(lid, GL_SPECULAR, l->color.specular.n);
 			if (l->color.ambiant.w > 0)
@@ -365,7 +364,7 @@ _c3_geometry_draw(
 	switch(g->type.type) {
 		case C3_LIGHT_TYPE: {
 			c3light_p l = (c3light_p)g;
-			GLuint lid = GL_LIGHT0 + (int)l->light_id;
+			GLuint lid = GL_LIGHT0 + C3APIO_INT(l->light_id);
 			glLightfv(lid, GL_POSITION, l->position.n);
 			if (c3context_view_get(c)->type != C3_CONTEXT_VIEW_LIGHT)
 				glEnable(lid);
@@ -380,7 +379,7 @@ _c3_geometry_draw(
 	glColor4fv(g->mat.color.n);
 	dumpError("glColor");
 
-	GLCHECK(glBindVertexArray((GLuint)g->bid));
+	GLCHECK(glBindVertexArray(C3APIO_INT(g->bid)));
 
 	glDisable(GL_TEXTURE_2D);
 	if (g->mat.texture) {
@@ -392,18 +391,18 @@ _c3_geometry_draw(
 					__func__, g->mat.texture->name->str, g->textures.count);
 	//	printf("tex mode %d texture %d\n", g->mat.mode, g->mat.texture);
 		dumpError("glEnable texture");
-		glBindTexture(mode, (GLuint)g->mat.texture->texture);
+		glBindTexture(mode, C3APIO_INT(g->mat.texture->texture));
 		dumpError("glBindTexture");
 	}
 	if (g->mat.program)
-		GLCHECK(glUseProgram((GLuint)g->mat.program->pid));
+		GLCHECK(glUseProgram(C3APIO_INT(g->mat.program->pid)));
 
 	if (g->indices.buffer.bid) {
-		GLCHECK(glDrawElements((GLuint)g->type.subtype,
+		GLCHECK(glDrawElements(C3APIO_INT(g->type.subtype),
 				g->indices.count, GL_UNSIGNED_SHORT,
 				(void*)NULL /*g->indices.e*/));
 	} else {
-		glDrawArrays((GLuint)g->type.subtype, 0, g->vertice.count);
+		glDrawArrays(C3APIO_INT(g->type.subtype), 0, g->vertice.count);
 	}
 	glBindVertexArray(0);
 

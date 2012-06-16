@@ -98,9 +98,9 @@ _c3_z_sorter(
 	if (g2->mat.color.n[3] < 1)
 		d2 -= 100000.0;
 	if (g1->type.type == C3_LIGHT_TYPE)
-		d1 = -200000 + (int)(((c3light_p)g1)->light_id);
+		d1 = -200000 + (int)((intptr_t)((c3light_p)g1)->light_id);
 	if (g2->type.type == C3_LIGHT_TYPE)
-		d2 = -200000 + (int)(((c3light_p)g2)->light_id);
+		d2 = -200000 + (int)((intptr_t)((c3light_p)g2)->light_id);
 
 	return d1 < d2 ? 1 : d1 > d2 ? -1 : 0;
 }

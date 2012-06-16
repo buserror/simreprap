@@ -103,10 +103,11 @@ c3program_load_shader(
 {
 	struct stat st;
 	str_p pgm = NULL;
+	int fd = -1;
 
 	if (stat(filename, &st))
 		goto error;
-	int fd = open(filename, O_RDONLY);
+	fd = open(filename, O_RDONLY);
 	if (fd == -1)
 		goto error;
 
