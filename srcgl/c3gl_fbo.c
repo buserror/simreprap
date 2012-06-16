@@ -73,7 +73,7 @@ c3gl_fbo_create(
 				b->size.x, b->size.y, 0,
 				GL_RGBA, GL_UNSIGNED_BYTE, NULL);
 		glBindTexture(GL_TEXTURE_2D, 0);
-		b->buffers[C3GL_FBO_COLOR].bid = (c3apiobject_t)tex;
+		b->buffers[C3GL_FBO_COLOR].bid = C3APIO(tex);
 	}
 
 	/* Depth buffer */
@@ -84,7 +84,7 @@ c3gl_fbo_create(
 		GLCHECK(glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT16,
 				b->size.x, b->size.y));
 		glBindRenderbuffer(GL_RENDERBUFFER, 0);
-		b->buffers[C3GL_FBO_DEPTH].bid = (c3apiobject_t)rbo_depth;
+		b->buffers[C3GL_FBO_DEPTH].bid = C3APIO(rbo_depth);
 	}
 
 	if (b->flags & (1 << C3GL_FBO_DEPTH_TEX)) {
@@ -110,7 +110,7 @@ c3gl_fbo_create(
 				b->size.x, b->size.y,
 				0, GL_DEPTH_COMPONENT, GL_UNSIGNED_BYTE, 0);
 		glBindTexture(GL_TEXTURE_2D, 0);
-		b->buffers[C3GL_FBO_DEPTH_TEX].bid = (c3apiobject_t)depthTextureId;
+		b->buffers[C3GL_FBO_DEPTH_TEX].bid = C3APIO(depthTextureId);
 	}
 
 	/* Framebuffer to link everything together */
@@ -120,7 +120,7 @@ c3gl_fbo_create(
 
 	if (b->flags & (1 << C3GL_FBO_COLOR)) {
 		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
-				GL_TEXTURE_2D, (GLuint)b->buffers[C3GL_FBO_COLOR].bid, 0);
+				GL_TEXTURE_2D, C3APIO_INT(b->buffers[C3GL_FBO_COLOR].bid), 0);
 		// Set the list of draw buffers.
 		GLenum DrawBuffers[2] = { GL_COLOR_ATTACHMENT0 };
 		glDrawBuffers(1, DrawBuffers); // "1" is the size of DrawBuffers
@@ -132,15 +132,15 @@ c3gl_fbo_create(
 
 	if (b->flags & (1 << C3GL_FBO_DEPTH))
 		glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT,
-	        GL_RENDERBUFFER, (GLuint)b->buffers[C3GL_FBO_DEPTH].bid);
+	        GL_RENDERBUFFER, C3APIO_INT(b->buffers[C3GL_FBO_DEPTH].bid));
 
 	if (b->flags & (1 << C3GL_FBO_DEPTH_TEX))
 		// attach the texture to FBO depth attachment point
 		glFramebufferTexture2D(GL_FRAMEBUFFER_EXT,
 				GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D,
-				(GLuint)b->buffers[C3GL_FBO_DEPTH_TEX].bid, 0);
+				C3APIO_INT(b->buffers[C3GL_FBO_DEPTH_TEX].bid), 0);
 
-	b->fbo = (c3apiobject_t)fbo;
+	b->fbo = C3APIO(fbo);
 
 	GLenum status;
 	if ((status = glCheckFramebufferStatus(GL_FRAMEBUFFER))
@@ -161,7 +161,7 @@ c3gl_fbo_resize(
 	b->size = size;
 // Rescale FBO and RBO as well
 	if (b->flags & (1 << C3GL_FBO_COLOR)) {
-		glBindTexture(GL_TEXTURE_2D, (GLuint)b->buffers[C3GL_FBO_COLOR].bid);
+		glBindTexture(GL_TEXTURE_2D, C3APIO_INT(b->buffers[C3GL_FBO_COLOR].bid));
 		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA,
 				b->size.x, b->size.y, 0,
 				GL_RGBA, GL_UNSIGNED_BYTE, NULL);
@@ -169,7 +169,7 @@ c3gl_fbo_resize(
 	}
 
 	if (b->flags & (1 << C3GL_FBO_DEPTH)) {
-		glBindRenderbuffer(GL_RENDERBUFFER, (GLuint)b->buffers[C3GL_FBO_DEPTH].bid);
+		glBindRenderbuffer(GL_RENDERBUFFER, C3APIO_INT(b->buffers[C3GL_FBO_DEPTH].bid));
 		glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT16,
 				b->size.x, b->size.y);
 		glBindRenderbuffer(GL_RENDERBUFFER, 0);
@@ -182,14 +182,14 @@ c3gl_fbo_dispose(
 {
 	/* free_resources */
 	if (b->flags & (1 << C3GL_FBO_DEPTH)) {
-		GLuint bid = (GLuint)b->buffers[C3GL_FBO_DEPTH].bid;
+		GLuint bid = C3APIO_INT(b->buffers[C3GL_FBO_DEPTH].bid);
 		glDeleteRenderbuffers(1, &bid);
 	}
 	if (b->flags & (1 << C3GL_FBO_COLOR)) {
-		GLuint bid = (GLuint)b->buffers[C3GL_FBO_COLOR].bid;
+		GLuint bid = C3APIO_INT(b->buffers[C3GL_FBO_COLOR].bid);
 		glDeleteTextures(1, &bid);
 	}
-	GLuint fbo = (GLuint)b->fbo;
+	GLuint fbo = C3APIO_INT(b->fbo);
 	glDeleteFramebuffers(1, &fbo);
 	memset(b, 0, sizeof(*b));
 }
