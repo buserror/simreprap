@@ -66,7 +66,6 @@ The basic data structure is as follow:
 	* Has a 'subtype' (mostly can be used to draw GL types)
 	* Has a 'material' (ie color, texture, a GPU program... to be completed)
 	* Has a list of vertices
-	* Has a cached copy of a vertices when it has been 'projected'
 	* Has a list of texture coordinates (optional)
 	* Has a list of vertices colors (optional)
 	* Had a list of vertices indexes (optional)
@@ -84,7 +83,11 @@ Also there are:
 * *c3cairo*:
 	Placeholder for now, inherits from *c3texture* and will contain a
 	cairo surface mapped to a GL texture.
-
+* *c3light*:
+	Source of light, as a hidden geometry do it get transformed like a normal
+	one. Right now the implementation uses glLight unless there is a shader
+	installed.
+	
 Draw Drivers "Inheritance"
 ------------
 Various object uses static tables of callbacks to implement their behaviours
