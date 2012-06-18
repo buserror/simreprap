@@ -845,7 +845,7 @@ c3mat4 c3mat4_sub(const c3mat4p a, const c3mat4p b)
         c3vec4_sub(a->v[3], b->v[3]));
 }
 
-c3mat4 c3mat4_mul(const c3mat4p a, const c3mat4p b)
+c3mat4 c3mat4_mul(const c3mat4p b, const c3mat4p a)
 {
     #define ROWCOL(i, j) \
         a->v[i].n[0]*b->v[0].n[j] + \

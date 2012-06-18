@@ -216,8 +216,8 @@ _gl_display_cb(void)		/* function called whenever redisplay needed */
 				0.0, 0.0, 0.5, 0.0,
 				0.5, 0.5, 0.5, 1.0};
 
-			c3mat4 b = c3mat4_mul(&light->projection, (c3mat4p)bias);
-			c3mat4 tex = c3mat4_mul(&light->cam.mtx, &b);
+			c3mat4 b = c3mat4_mul((c3mat4p)bias, &light->projection);
+			c3mat4 tex = c3mat4_mul(&b, &light->cam.mtx);
 
 			GLCHECK(glUseProgram(C3APIO_INT(scene->pid)));
 			glUniformMatrix4fv(
