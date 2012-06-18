@@ -90,12 +90,14 @@ _c3object_project(
 		const c3driver_object_t * d,
 		c3mat4p m)
 {
-	o->world = *m;
+	//o->world = *m;
 	if (!o->dirty)
 		return;
 	c3mat4 p = *m;
-	for (int pi = 0; pi < o->transform.count; pi++)
-		p = c3mat4_mul(&p, &o->transform.e[pi]->matrix);
+	for (int pi = 0; pi < o->transform.count; pi++) {
+		c3mat4 t = p;
+		p = c3mat4_mul(&t, &o->transform.e[pi]->matrix);
+	}
 	o->world = p;
 
 	for (int gi = 0; gi < o->geometry.count; gi++) {

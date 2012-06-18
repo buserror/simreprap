@@ -323,7 +323,7 @@ c3cam_update_matrix(
     		c3vec4f(c->side.n[VY], 	c->up.n[VY],	c->forward.n[VY],	0.0),
     		c3vec4f(c->side.n[VZ], 	c->up.n[VZ],	c->forward.n[VZ],	0.0),
     		c3vec4f(0.0, 			0.0, 			0.0, 				1.0));
-    c->mtx = c3mat4_mul(&m1, &m2);
+    c->mtx = c3mat4_mul(&m2, &m1);
 }
 
 void
