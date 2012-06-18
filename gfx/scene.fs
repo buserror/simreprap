@@ -1,12 +1,55 @@
 uniform sampler2DShadow shadowMap ;
 
 // This define the value to move one pixel left or right
-uniform vec2 pixelOffset = vec2(1.0 / 1024.0, 1.0 / 1024.0);
+uniform vec2 pixelOffset = vec2(1.0 / 1024, 1.0 / 1024);
 uniform sampler2D tex0;
 varying vec2 texCoord;
 
 varying vec4 ShadowCoord;
 
+
+varying vec4 diffuse,ambientGlobal, ambient;
+varying vec3 normal,lightDir,halfVector;
+varying float dist;
+
+vec4 pointlight()
+{
+	vec3 n,halfV,viewV,ldir;
+	float NdotL,NdotHV;
+	vec4 color = ambientGlobal;
+	float att;
+	
+	/* a fragment shader can't write a verying variable, hence we need
+	a new variable to store the normalized interpolated normal */
+//	n = normalize(normal);
+	n = normal;
+	
+	/* compute the dot product between normal and ldir */
+//	NdotL = max(dot(n,normalize(lightDir)),0.0);
+//	NdotL = max(dot(n, lightDir), 0.0);
+	NdotL = dot(n, lightDir);
+
+	if (NdotL > 0.0) {
+		att = 1.0 / (gl_LightSource[0].constantAttenuation +
+				gl_LightSource[0].linearAttenuation * dist +
+				gl_LightSource[0].quadraticAttenuation * dist * dist);
+		color += att * (diffuse * NdotL + ambient);
+	
+//		halfV = normalize(halfVector);
+		halfV = halfVector;
+//		NdotHV = max(dot(n,halfV), 0.0);	// wrong, leaves tangent artifacts!
+		NdotHV = dot(n,halfV);
+		color += att * gl_FrontMaterial.specular * 
+				gl_LightSource[0].specular * 
+				pow(NdotHV, gl_FrontMaterial.shininess);
+	}
+
+	return color;
+}
+
+float rand(vec2 co){
+    return fract(sin(dot(co.xy ,vec2(12.9898,78.233))) * 43758.5453);
+}
 
 float lookup( vec2 offSet)
 {
@@ -20,13 +63,11 @@ float lookup( vec2 offSet)
 
 void main()
 {	
-	// Used to lower moiré pattern and self-shadowing
-	//shadowCoordinateWdivide.z += ;
-	
-	float shadow = 0.0;
-	
+	float shadow = 1.0;
+#if 1
 	// Avoid counter shadow
-	if (ShadowCoord.w > 1.0) {
+	//if (ShadowCoord.w > 0.0)
+	 {
 		// Simple lookup, no PCF
 		//shadow = lookup(vec2(0.0,0.0));
 
@@ -49,21 +90,21 @@ void main()
 		*/
 
 		// 4x4 kernel PCF
-		/*
+		
 		float x,y;
 		for (y = -1.5 ; y <=1.5 ; y+=1.0)
 			for (x = -1.5 ; x <=1.5 ; x+=1.0)
 				shadow += lookup(vec2(x,y));
 		shadow /= 16.0 ;
-		*/
-		// 4x4  PCF wide kernel (step is 10 instead of 1)
 		
+		// 4x4  PCF wide kernel (step is 10 instead of 1)
+		/*
 		float x,y;
 		for (y = -10.5 ; y <=10.5 ; y+=10.0)
 			for (x = -10.5 ; x <=10.5 ; x+=10.0)
 				shadow += lookup(vec2(x,y));
 		shadow /= 16.0 ;
-		
+		*/
 		
 		// 4x4  PCF dithered
 		/*
@@ -77,6 +118,10 @@ void main()
 		shadow *= 0.25 ;
 		*/
 	}
- 	vec4 c = (shadow + 0.0) * gl_Color;
-  	gl_FragColor = mix(texture2D(tex0, texCoord), vec4(0.0,0.0,0.0,0.9), 0.8-shadow);
+#endif
+
+	vec4 tex = texture2D(tex0, texCoord);
+	vec4 light = pointlight();
+	tex = mix(tex * light, vec4(0.0,0.0,0.0,1.0), 0.6-shadow);
+	gl_FragColor = tex;
 }
