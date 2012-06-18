@@ -73,7 +73,7 @@ demos: $(DEMOS)
 
 tests: $(TESTS)
 
-lib: $(OBJ)/libfreetype-gl.a
+lib: $(OBJ) $(OBJ)/libfreetype-gl.a
 
 $(OBJ)/libfreetype-gl.a: $(OBJECTS)
 	rm -f $@ && $(AR) cru $@ $^ && $(RANLIB) $@
@@ -84,7 +84,7 @@ $(BIN)/%: $(OBJ)/%.o $(OBJ)/libfreetype-gl.a
 
 $(OBJ)/%.o : %.c
 	@echo "Building $@... "
-	@$(CC) -MMD -c $(CPPLAGS) $(CFLAGS) ${filter %.c, $^} -o $@ 
+	@$(CC) -MMD -c $(CPPFLAGS) $(CFLAGS) ${filter %.c, $^} -o $@ 
 
 $(BIN)/demo-atb-agg: LDFLAGS += -lAntTweakBar
 $(BIN)/demo-markup: LDFLAGS += -lfontconfig
