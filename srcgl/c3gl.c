@@ -188,16 +188,18 @@ _c3_load_pixels(
 	}
 	if (pix->dirty) {
 		pix->dirty = 0;
-		GLCHECK(glBindTexture(mode, C3APIO_INT(pix->texture)));
-		glTexImage2D(mode, 0,
-				pix->format == C3PIXEL_A ? GL_ALPHA16 : GL_RGBA8,
-				pix->w, pix->h, 0,
-				pix->format == C3PIXEL_A ? GL_ALPHA : GL_BGRA,
-				GL_UNSIGNED_BYTE,
-				pix->base);
-		dumpError("glTexImage2D");
-		if (pix->normalize)
-			GLCHECK(glGenerateMipmap(mode));
+		if (pix->base) {
+			GLCHECK(glBindTexture(mode, C3APIO_INT(pix->texture)));
+			glTexImage2D(mode, 0,
+					pix->format == C3PIXEL_A ? GL_ALPHA16 : GL_RGBA8,
+					pix->w, pix->h, 0,
+					pix->format == C3PIXEL_A ? GL_ALPHA : GL_BGRA,
+					GL_UNSIGNED_BYTE,
+					pix->base);
+			dumpError("glTexImage2D");
+			if (pix->normalize)
+				GLCHECK(glGenerateMipmap(mode));
+		}
 	}
 }
 
@@ -246,7 +248,7 @@ _c3_load_vbo(
 				&bid);
 		glVertexPointer(3, GL_FLOAT, 0, (void*)0);
 		g->vertice.buffer.bid = C3APIO(bid);
-		if (!g->vertice.buffer.mutable)
+		if (!g->vertice.buffer.mutable && !g->debug)
 			c3vertex_array_realloc(&g->vertice, 0);
 		g->vertice.buffer.dirty = 0;
 	}
@@ -259,7 +261,7 @@ _c3_load_vbo(
 				&bid);
 		glTexCoordPointer(2, GL_FLOAT, 0, (void*)0);
 		g->textures.buffer.bid = C3APIO(bid);
-		if (!g->textures.buffer.mutable)
+		if (!g->textures.buffer.mutable && !g->debug)
 			c3tex_array_free(&g->textures);
 		g->textures.buffer.dirty = 0;
 	}
@@ -272,7 +274,7 @@ _c3_load_vbo(
 				&bid);
 		glNormalPointer(GL_FLOAT, 0, (void*) 0);
 		g->normals.buffer.bid = C3APIO(bid);
-		if (!g->normals.buffer.mutable)
+		if (!g->normals.buffer.mutable && !g->debug)
 			c3vertex_array_free(&g->normals);
 		g->normals.buffer.dirty = 0;
 	}
@@ -285,7 +287,7 @@ _c3_load_vbo(
 				&bid);
 		glColorPointer(4, GL_FLOAT, 0, (void*) 0);
 		g->colorf.buffer.bid = C3APIO(bid);
-		if (!g->colorf.buffer.mutable)
+		if (!g->colorf.buffer.mutable && !g->debug)
 			c3colorf_array_free(&g->colorf);
 		g->colorf.buffer.dirty = 0;
 	}
@@ -299,7 +301,7 @@ _c3_load_vbo(
         		g->indices.e,
         		g->indices.buffer.mutable ? GL_DYNAMIC_DRAW : GL_STATIC_DRAW);
 		g->indices.buffer.bid = C3APIO(bid);
-		if (!g->indices.buffer.mutable)
+		if (!g->indices.buffer.mutable && !g->debug)
 			c3indices_array_realloc(&g->indices, 0);
 		g->indices.buffer.dirty = 0;
 	}
@@ -336,7 +338,8 @@ _c3_geometry_project(
 				glLightfv(lid, GL_AMBIENT, l->color.ambiant.n);
 		}	break;
 		default:
-		    break;
+			g->type.subtype = (c3apiobject_t)GL_TRIANGLES;
+			break;
 	}
 
 	_c3_load_vbo(g);
@@ -357,9 +360,16 @@ _c3_geometry_draw(
 		c3geometry_p g )
 {
 	c3mat4 eye = c3mat4_mul(
-			&g->object->world,
-			&c3context_view_get(g->object->context)->cam.mtx);
+			&c3context_view_get(g->object->context)->cam.mtx,
+			&g->object->world );
 	glLoadMatrixf(eye.n);
+
+#if 0
+	if (g->name)
+		printf("%s draw %s\n", __func__, g->name->str);
+	else
+		printf("%s draw %p\n", __func__, g);
+#endif
 
 	switch(g->type.type) {
 		case C3_LIGHT_TYPE: {
@@ -387,8 +397,10 @@ _c3_geometry_draw(
 				GL_TEXTURE_2D : GL_TEXTURE_RECTANGLE_ARB;
 		glEnable(mode);
 		if (g->mat.texture->trace)
-			printf("%s uses texture %s (%d tex)\n",
-					__func__, g->mat.texture->name->str, g->textures.count);
+			printf("%s view %d uses texture %s(%d) (%d tex)\n",
+					__func__, c->current, g->mat.texture->name->str,
+					C3APIO_INT(g->mat.texture->texture),
+					g->textures.count);
 	//	printf("tex mode %d texture %d\n", g->mat.mode, g->mat.texture);
 		dumpError("glEnable texture");
 		glBindTexture(mode, C3APIO_INT(g->mat.texture->texture));
@@ -410,6 +422,21 @@ _c3_geometry_draw(
 		glDisable(g->mat.texture->normalize ? GL_TEXTURE_2D : GL_TEXTURE_RECTANGLE_ARB);
 	if (g->mat.program)
 		glUseProgram(0);
+
+	if (g->debug) {
+		if (g->normals.count) {
+			for (int i = 0; i < g->vertice.count; i++) {
+				c3vec3 o = g->vertice.e[i];
+				glBegin(GL_LINES);
+				glColor4f(0.0,0.0,1.0,1.0);
+				glVertex3fv(o.n);
+				o = c3vec3_add(o, g->normals.e[i]);
+				glColor4f(1.0,0.0,0.0,1.0);
+				glVertex3fv(o.n);
+				glEnd();
+			}
+		}
+	}
 	C3_DRIVER_INHERITED(c, d, geometry_draw, g);
 }
 

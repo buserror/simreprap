@@ -104,9 +104,11 @@ c3gl_fbo_create(
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_MODE, GL_COMPARE_R_TO_TEXTURE);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_FUNC, GL_LEQUAL);
 		glTexParameteri(GL_TEXTURE_2D, GL_DEPTH_TEXTURE_MODE, GL_INTENSITY);
-
+		// to debug depth buffer
+		//glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_COMPARE_MODE, GL_NONE );
+		//glTexParameteri( GL_TEXTURE_2D, GL_DEPTH_TEXTURE_MODE, GL_LUMINANCE );
 		// No need to force GL_DEPTH_COMPONENT24, drivers usually give you the max precision if available
-		glTexImage2D( GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT,
+		glTexImage2D( GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT32,
 				b->size.x, b->size.y,
 				0, GL_DEPTH_COMPONENT, GL_UNSIGNED_BYTE, 0);
 		glBindTexture(GL_TEXTURE_2D, 0);
