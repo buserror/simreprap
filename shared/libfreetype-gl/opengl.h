@@ -34,6 +34,7 @@
 #ifndef __OPEN_GL_H__
 #define __OPEN_GL_H__
 
+#define GL_GLEXT_PROTOTYPES
 #if defined(__APPLE__)
 #  ifdef GL_ES_VERSION_2_0
 #    include <OpenGLES/ES2/gl.h>
