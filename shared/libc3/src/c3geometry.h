@@ -94,6 +94,7 @@ typedef struct c3geometry_type_t {
 typedef struct c3geometry_t {
 	c3geometry_type_t	type;	// geometry type
 	int					dirty : 1,
+						debug : 1,
 						custom : 1,		// has a custom driver
 						hidden : 8;		// hidden from context_view, bitfield
 	str_p 				name;	// optional
@@ -107,9 +108,8 @@ typedef struct c3geometry_t {
 	c3vertex_array_t 	vertice;
 	c3tex_array_t		textures;	// optional: texture coordinates
 	c3vertex_array_t 	normals;	// optional: vertex normals
-	c3indices_array_t	indices;	// optional: vertex indices
-	// could go ?
 	c3colorf_array_t	colorf;		// optional: vertex colors
+	c3indices_array_t	indices;	// optional: vertex indices
 
 	/*
 	 * Some shared attributes
