@@ -52,6 +52,8 @@ typedef struct c3context_view_t {
 
 DECLARE_C_ARRAY(c3context_view_t, c3context_view_array, 4);
 
+struct c3font_manager_t;
+
 //! c3context_t is a container for a 'scene' to be drawn
 /*!
  * A c3context_t holds a root object, a list of already cached projected
@@ -71,6 +73,8 @@ typedef struct c3context_t {
 	c3program_array_t	programs;	// fragment, vertex, geometry shaders
 
 	const struct c3driver_context_t ** driver;
+
+	struct c3font_manager_t * fonts;
 } c3context_t, *c3context_p;
 
 //! Allocates a new context of size w=width, h=height
