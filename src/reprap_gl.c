@@ -45,7 +45,9 @@
 #include "c3sphere.h"
 #include "c3light.h"
 #include "c3program.h"
+#include "c3cube.h"
 #include "c3gl.h"
+#include "c3text.h"
 #include "c3gl_fbo.h"
 
 #include <cairo/cairo.h>
@@ -153,8 +155,6 @@ _gl_key_cb(
 static void
 _gl_display_cb(void)		/* function called whenever redisplay needed */
 {
-	int drawIndexes[] = { 1, 0 };
-	int drawViewStart = c3->root->dirty ? 0 : 1;
 
 	c3vec3 headp = c3vec3f(
 			stepper_get_position_mm(&reprap.step_x),
@@ -163,9 +163,22 @@ _gl_display_cb(void)		/* function called whenever redisplay needed */
 	c3mat4 headmove = translation3D(headp);
 	c3transform_set(head->transform.e[0], &headmove);
 
+	int drawIndexes[] = { 1, 0 };
+	int drawViewStart = c3->root->dirty ? 0 : 1;
+//	int drawViewStart = 0;
+
+//	if (drawViewStart == 0) {
+	//	printf("Recalculate light\n");
+//	}
+#if 0
+	glBindTexture(GL_TEXTURE_2D, shadow.buffers[C3GL_FBO_DEPTH_TEX].bid);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_FUNC, GL_LEQUAL);
+	glTexParameteri(GL_TEXTURE_2D, GL_DEPTH_TEXTURE_MODE, GL_INTENSITY);
+	glBindTexture(GL_TEXTURE_2D, 0);
+#endif
+
 	for (int vi = drawViewStart; vi < 2; vi++) {
 		c3context_view_set(c3, drawIndexes[vi]);
-
 		/*
 		 * Draw in FBO object
 		 */
@@ -186,7 +199,6 @@ _gl_display_cb(void)		/* function called whenever redisplay needed */
 
 		glEnable(GL_CULL_FACE);
 		glDepthMask(GL_TRUE);
-		glDepthFunc(GL_LEQUAL);
 		glEnable(GL_DEPTH_TEST);
 	//	glPolygonMode( GL_FRONT_AND_BACK, GL_LINE );
 
@@ -196,10 +208,10 @@ _gl_display_cb(void)		/* function called whenever redisplay needed */
 
 		glMatrixMode(GL_MODELVIEW);
 
-
 		if (view->type == C3_CONTEXT_VIEW_EYE) {
 		//	glShadeModel(GL_SMOOTH);
 		//	glEnable(GL_LIGHTING);
+		//	glDepthFunc(GL_LESS);
 			glCullFace(GL_BACK);
 			glEnable(GL_BLEND); // Enable Blending
 
@@ -225,14 +237,23 @@ _gl_display_cb(void)		/* function called whenever redisplay needed */
 					1, GL_FALSE, tex.n);
 		} else {
 			glCullFace(GL_FRONT);
-			glShadeModel(GL_FLAT);
-			glDisable(GL_LIGHTING);
-			glDisable(GL_BLEND); // Disable Blending
+			glEnable(GL_DEPTH_TEST);
+		//	glDepthFunc(GL_NOTEQUAL);
+		//	glShadeModel(GL_FLAT);
+		//	glDisable(GL_LIGHTING);
+		//	glDisable(GL_BLEND); // Disable Blending
+			GLCHECK(glUseProgram(0));
 		}
 
 		c3context_draw(c3);
 	}
-
+	c3context_view_set(c3, 0);
+#if 0
+	glBindTexture(GL_TEXTURE_2D, shadow.buffers[C3GL_FBO_DEPTH_TEX].bid);
+	glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_COMPARE_MODE, GL_NONE );
+	glTexParameteri( GL_TEXTURE_2D, GL_DEPTH_TEXTURE_MODE, GL_LUMINANCE );
+	glBindTexture(GL_TEXTURE_2D, 0);
+#endif
 	/*
 	 * Draw back FBO over the screen
 	 */
@@ -258,10 +279,7 @@ _gl_display_cb(void)		/* function called whenever redisplay needed */
 
 	glMatrixMode(GL_MODELVIEW); // Select modelview matrix
 
-	if (hud->root->dirty) {
-	//	printf("reproject head %.2f,%.2f,%.2f\n", headp.x, headp.y,headp.z);
-		c3context_project(hud);
-	}
+	c3context_project(hud);
 	c3context_draw(hud);
 
     glutSwapBuffers();
@@ -351,6 +369,7 @@ _gl_timer_cb(
 	glutPostRedisplay();
 }
 
+
 const c3driver_context_t * c3_driver_list[3] = { NULL, NULL };
 
 int
@@ -381,7 +400,7 @@ gl_init(
 	glColorMaterial(GL_FRONT, GL_AMBIENT_AND_DIFFUSE);
 
 	/* setup some lights */
-	GLfloat global_ambient[] = { 0.5f, 0.5f, 0.5f, 1.0f };
+	GLfloat global_ambient[] = { 0.3f, 0.3f, 0.3f, 1.0f };
 	glLightModelfv(GL_LIGHT_MODEL_AMBIENT, global_ambient);
 
 	if (0) {
@@ -417,15 +436,19 @@ gl_init(
 	cam->eye = c3vec3f(100.0, -100.0, 100.0);
 	// associate the framebuffer object with this view
 	c3context_view_get_at(c3, 0)->bid = fbo.fbo;
+
+    c3pixels_p white_tex = NULL;
+//    c3pixels_p brass_tex = NULL;
 	/*
 	 * Create a light, attach it to a movable object, and attach a sphere
 	 * to it too so it's visible.
 	 */
+    c3vec3 lightpos = c3vec3f(-30.0f, -30.0f, 150.0f);
 	{
 		c3object_p ligthhook = c3object_new(c3->root);
 	    c3transform_p pos = c3transform_new(ligthhook);
 
-	    pos->matrix = translation3D(c3vec3f(-30.0f, -30.0f, 200.0f));
+	    pos->matrix = translation3D(lightpos);
 
 		c3light_p light = c3light_new(ligthhook);
 		light->geometry.name = str_new("light0");
@@ -433,9 +456,11 @@ gl_init(
 		light->position = c3vec4f(0, 0, 0, 1.0f );
 
 	    {	// light bulb
-	    	c3geometry_p g = c3sphere_uv(ligthhook, c3vec3f(0, 0, 0), 3, 10, 10);
+	    	c3geometry_p g = c3sphere_uv(ligthhook, c3vec3f(0,0,0), 3, 10, 10);
 	    	g->mat.color = c3vec4f(1.0, 1.0, 0.0, 1.0);
-	    	g->hidden = 0;	// hidden from light scenes
+	    	g->mat.texture = white_tex;
+	    	g->hidden = (1 << 1);	// hidden from light scene
+			g->name = str_new("light bulb");
 	    }
 	}
 	{
@@ -450,7 +475,7 @@ gl_init(
 				.bid = shadow.fbo,
 		};
 		c3cam_init(&v.cam);
-		c3vec3 listpos = c3vec3f(-30.0f, -30.0f, 200.0f);
+		c3vec3 listpos = lightpos;
 		v.cam.eye = listpos;
 		v.cam.lookat = c3vec3f(100.0, 100.0, 0.0);
 		c3context_view_array_add(&c3->views, v);
@@ -460,7 +485,7 @@ gl_init(
     	const char *path = "gfx/hb.png";
         cairo_surface_t * image = cairo_image_surface_create_from_png (path);
         printf("image = %p %p\n", image, cairo_image_surface_get_data (image));
-    	c3texture_p b = c3texture_new(c3->root);
+    //	c3texture_p b = c3texture_new(c3->root);
 
     	c3pixels_p dst = c3pixels_new(
     			cairo_image_surface_get_width (image),
@@ -469,12 +494,15 @@ gl_init(
     			cairo_image_surface_get_data (image));
 		dst->name = str_new(path);
     	dst->normalize = 1;
-    	b->geometry.mat.texture = dst;
-    	b->size = c3vec2f(200, 200);
-		b->geometry.mat.color = c3vec4f(1.0, 1.0, 1.0, 1.0);
-//	    c3transform_new(head);
+		c3pixels_array_add(&c3->pixels, dst);
+
+		c3geometry_p g = c3cube_new(c3vec3f(100, 100, -1), c3vec3f(200, 200, 2),
+				C3CUBE_CENTER | C3CUBE_FACE_ALL, c3->root);
+		g->mat.color = c3vec4f(1.0, 1.0, 1.0, 1.0);
+		g->mat.texture = dst;
+		g->name = str_new("hotbed");
     }
-    c3pixels_p brass_tex = NULL;
+#if 1
     {
     	const char *path = "gfx/brass.png";
         cairo_surface_t * image = cairo_image_surface_create_from_png (path);
@@ -488,9 +516,16 @@ gl_init(
 		dst->name = str_new(path);
     	dst->normalize = 1;
 		c3pixels_array_add(&c3->pixels, dst);
-//	    c3transform_new(head);
-		brass_tex = dst;
+	//	brass_tex = dst;
+#if 0
+		c3geometry_p g = c3cube_new(c3vec3f(120, 80, 10), c3vec3f(10, 10, 10),
+				C3CUBE_CENTER | C3CUBE_FACE_ALL, c3->root);
+		g->mat.color = c3vec4f(1.0, 1.0, 1.0, 1.0);
+		g->mat.texture = dst;
+		g->name = str_new("debug cube");
+#endif
     }
+#endif
     c3pixels_p line_aa_tex = NULL;
     {
     	const char *path = "gfx/BlurryCircle.png";
@@ -532,6 +567,7 @@ gl_init(
     	dst->format = C3PIXEL_ARGB;
     	dst->normalize = 1;
     	dst->name = str_new(path);
+		c3pixels_array_add(&c3->pixels, dst);
     	uint8_t * line = dst->base;
     	for (int y = 0; y < dst->h; y++, line += dst->row) {
     		uint32_t *p = (uint32_t *)line;
@@ -554,15 +590,15 @@ gl_init(
     }
     c3object_p grid = c3object_new(c3->root);
     {
-        for (int x = 0; x <= 20; x++) {
-        	for (int y = 0; y <= 20; y++) {
+        for (int x = 1; x < 20; x++) {
+        	for (int y = 1; y < 20; y++) {
         		c3vec3 p[4] = {
         			c3vec3f(-1+x*10,y*10,0.01), c3vec3f(1+x*10,y*10,0.01),
         			c3vec3f(x*10,-1+y*10,0.02), c3vec3f(x*10,1+y*10,0.02),
         		};
             	c3geometry_p g = c3geometry_new(
             			c3geometry_type(C3_LINES_TYPE, 0), grid);
-            	g->mat.color = c3vec4f(0.0, 0.0, 0.0, 0.8);
+            	g->mat.color = c3vec4f(0.0, 0.0, 0.0, 0.9);
             	g->mat.texture = line_aa_tex;
         		c3lines_init(g, p, 4, 0.2);
         	}
@@ -583,12 +619,22 @@ gl_init(
 				g->vertice.count, p, 2);
 
     }
+	{
+		c3pixels_p dst = c3pixels_new(2, 2, 4, 8, NULL);
+		dst->name = str_new("white");
+		dst->normalize = 1;
+		for (int i = 0; i < 4; i++)
+			((uint32_t*) dst->base)[i] = 0xffffffff;
+		c3pixels_array_add(&c3->pixels, dst);
+		white_tex = dst;
+	}
     head = c3stl_load("gfx/buserror-nozzle-model.stl", c3->root);
     c3transform_new(head);
     if (head->geometry.count > 0) {
     	c3geometry_factor(head->geometry.e[0], 0.1, (20 * M_PI) / 180.0);
     	head->geometry.e[0]->mat.color = c3vec4f(0.6, 0.5, 0.0, 1.0);
-    	head->geometry.e[0]->mat.texture = brass_tex;
+//    	head->geometry.e[0]->mat.color = c3vec4f(1.0, 1.0, 1.0, 1.0);
+    	head->geometry.e[0]->mat.texture = white_tex;
     }
 
 #if 0
@@ -677,6 +723,31 @@ gl_init(
     	g->mat.color = c3vec4f(0.5, 0.5, 1.0, .3f);
     	g->mat.texture = line_aa_tex;
 		c3lines_init(g, p, 2, 10);
+    }
+    if (0) {
+    	c3object_p hook = c3object_new(hud->root);
+	    c3transform_p pos = c3transform_new(hook);
+	    pos->matrix = translation3D(c3vec3f(10.0f, 300.0f, 0.0f));
+
+		c3texture_p b = c3texture_new(hook);
+
+    	c3pixels_p dst = c3pixels_new(shadow.size.x, shadow.size.y, 4,
+    			shadow.size.x * 4, NULL);
+		dst->name = str_new("shadow fbo");
+		dst->texture = shadow.buffers[C3GL_FBO_DEPTH_TEX].bid;
+		dst->normalize = 1;
+		dst->dirty = 0;
+	//	dst->trace = 1;
+    	b->geometry.mat.texture = dst;
+    	b->size = c3vec2f(128, 128);
+		b->geometry.mat.color = c3vec4f(0.0, 1.0, 1.0, 1.0);
+    }
+    {
+    	c3text_p t = c3text_new(hud->root);
+    	c3text_style_t style = { .align = C3TEXT_ALIGN_LEFT, .mutable = 1 };
+
+    	c3text_set_font(t, "gfx/VeraMono.ttf", 18, style);
+    	c3text_set(t, c3vec2f(236, 20), "Hello World!");
     }
 	return 1;
 }
