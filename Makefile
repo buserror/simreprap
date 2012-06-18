@@ -16,12 +16,14 @@
 #	You should have received a copy of the GNU General Public License
 #	along with simavr.  If not, see <http://www.gnu.org/licenses/>.
 
+CC = gcc
 target=	reprap
 firm_src = ${wildcard atmega*.c}
 firmware = ${firm_src:.c=.hex}
 
 SIMAVR	= shared/simavr
 LIBC3	= shared/libc3
+FTGL	= shared/libfreetype-gl
 
 IPATH = .
 IPATH += src
@@ -31,6 +33,7 @@ IPATH += ${SIMAVR}/include
 IPATH += ${SIMAVR}/simavr/sim
 IPATH += ${SIMAVR}/examples/parts
 IPATH += ${SIMAVR}/examples/shared
+IPATH += ${FTGL}
 
 VPATH = src
 VPATH += ${SIMAVR}/examples/parts
@@ -39,6 +42,7 @@ VPATH += ${SIMAVR}/examples/shared
 # for the Open Motion Controller board
 CPPFLAGS += -DMOTHERBOARD=91
 CPPFLAGS += ${shell pkg-config --cflags pangocairo}
+CPPFLAGS += ${shell freetype-config --cflags}
 
 include ${SIMAVR}/examples/Makefile.opengl
 
@@ -47,6 +51,7 @@ LDFLAGS += -lpthread -lutil -ldl
 LDFLAGS += -lm
 LDFLAGS += -Wl,-rpath $(LIBC3)/${OBJ}/.libs -L$(LIBC3)/${OBJ}/.libs -lc3 -lc3gl
 LDFLAGS += -Wl,-rpath ${SIMAVR}/simavr/${OBJ} -L${SIMAVR}/simavr/${OBJ} 
+LDFLAGS += -L${FTGL}/${OBJ} -lfreetype-gl ${shell freetype-config --libs} 
 
 CPPFLAGS	+= ${patsubst %,-I%,${subst :, ,${IPATH}}}
 
@@ -56,6 +61,7 @@ include ${SIMAVR}/Makefile.common
 
 board = ${OBJ}/${target}.elf
 
+${board} : ${OBJ}/c3text.o
 ${board} : ${OBJ}/arduidiot_pins.o
 ${board} : ${OBJ}/button.o
 ${board} : ${OBJ}/uart_pty.o
@@ -67,11 +73,13 @@ ${board} : ${OBJ}/${target}_gl.o
 
 build-simavr:
 	$(MAKE) -C $(SIMAVR) CC="$(CC)" CFLAGS="$(CFLAGS)" build-simavr
-
 build-libc3:
 	$(MAKE) -C $(LIBC3) CC="$(CC)" CFLAGS="$(CFLAGS)"
+build-ftgl:
+	$(MAKE) -C $(FTGL) CC="$(CC)" CPPFLAGS="$(CPPFLAGS)" \
+		CFLAGS="$(CFLAGS)" lib
 
-${target}:  build-simavr build-libc3 ${board}
+${target}:  build-simavr build-libc3 build-ftgl ${board}
 	@echo $@ done
 
 clean: clean-${OBJ}
