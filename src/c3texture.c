@@ -56,8 +56,8 @@ _c3texture_project(
 	c3vertex_array_realloc(&g->vertice, 4);
 	c3vertex_array_insert(&g->vertice, 0, v, 4);
 
-	c3f tw = p->normalize ? 1.0 : p->w,
-		th = p->normalize ? 1.0 : p->h;
+	c3f tw = p->rectangle ? p->w : 1.0,
+		th = p->rectangle ? p->h : 1.0;
 	c3vec2 ti[4] = {
 			c3vec2f(0, th), c3vec2f(tw, th),
 			c3vec2f(tw, 0), c3vec2f(0, 0)
@@ -108,6 +108,5 @@ c3texture_resize(
 		c3vec2 size )
 {
 	t->size = size;
-	t->geometry.dirty = 1;
 	c3geometry_set_dirty(&t->geometry, 1);
 }

@@ -9,7 +9,7 @@ IPATH 		+= srcgl
 VPATH		+= src
 VPATH		+= srcgl
 
-OBJ 		= obj-${shell $(CC) -dumpmachine}
+OBJ 		:= obj-${shell $(CC) -dumpmachine}
 
 C3SRC		= ${wildcard src/*.c}
 C3OBJ 		= ${patsubst src/%,${OBJ}/%,${C3SRC:.c=.lo}}
@@ -31,10 +31,10 @@ LIBTOOL		= libtool
 endif
 
 CONFIG_H	= c3config-${PLATFORM}.h
-CPPCAIRO	+= ${shell $(PKGCONFIG) --cflags pango cairo}
+CPPCAIRO	:= ${shell $(PKGCONFIG) --cflags pango cairo 2>/dev/null}
 
 CFLAGS		= -g -O2
-CPPFLAGS	+= --std=gnu99 -fPIC
+CPPFLAGS	:= --std=gnu99 -fPIC
 CPPFLAGS	+= ${patsubst %,-I%,${subst :, ,${IPATH}}}
 CPPFLAGS 	+= $(CPPCAIRO) 
 

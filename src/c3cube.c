@@ -68,6 +68,7 @@ c3cube_add(
 		}
 		c3tex_array_insert(&g->textures, g->textures.count, (c3vec2*)tex, 6);
 	}
+	g->dirty = 1;
 
 	return g;
 }

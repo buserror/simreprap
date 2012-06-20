@@ -30,7 +30,8 @@
 enum {
 	C3PIXEL_ARGB = 0,
 	C3PIXEL_RGB,
-	C3PIXEL_A
+	C3PIXEL_LUMINANCE,
+	C3PIXEL_ALPHA,
 };
 
 typedef struct c3pixels_t {
@@ -45,8 +46,9 @@ typedef struct c3pixels_t {
 				alloc : 1,			// is the c3pixels_p our own to delete
 				dirty : 1,			// pixels have been changed
 				psize : 4,			// pixel size in byte
-				normalize : 1,		// texture coordinates are 0...1
+				rectangle : 1,		// texture coordinates are 0...width not 0...1
 				trace : 1,			// debug
+				mutable : 1,		// should the texture be purged
 				format : 8;			// not used internally
 		};
 		uint32_t flags;

@@ -60,7 +60,7 @@ _c3object_dispose(
 			}
 		o->parent = NULL;
 	}
-	//C3O_DRIVER_INHERITED(dispose, d);
+	C3_DRIVER_INHERITED(o, d, dispose);
 	free(o);
 }
 
@@ -73,8 +73,9 @@ _c3object_get_geometry(
 	// if this object is not visible in this view, exit
 	// there will be no geometry, so no drawing
 	uint16_t viewmask = (1 << o->context->current);
-	if (o->hidden & viewmask)
+	if (o->hidden & viewmask) {
 		return;
+	}
 	for (int oi = 0; oi < o->geometry.count; oi++) {
 		c3geometry_p g = o->geometry.e[oi];
 		if (!(g->hidden & viewmask))
@@ -82,6 +83,7 @@ _c3object_get_geometry(
 	}
 	for (int oi = 0; oi < o->objects.count; oi++)
 		c3object_get_geometry(o->objects.e[oi], out);
+	C3_DRIVER_INHERITED(o, d, get_geometry, out);
 }
 
 void
@@ -90,7 +92,6 @@ _c3object_project(
 		const c3driver_object_t * d,
 		c3mat4p m)
 {
-	//o->world = *m;
 	if (!o->dirty)
 		return;
 	c3mat4 p = *m;
@@ -107,6 +108,7 @@ _c3object_project(
 	for (int oi = 0; oi < o->objects.count; oi++)
 		c3object_project(o->objects.e[oi], &p);
 	o->dirty = false;
+	C3_DRIVER_INHERITED(o, d, project, m);
 }
 
 const c3driver_object_t c3object_driver = {
