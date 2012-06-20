@@ -58,6 +58,7 @@ DECLARE_C_ARRAY(c3index_t, c3indices_array, 16, c3geometry_buffer_t buffer);
 //! Geometry material.
 typedef struct c3material_t {
 	c3colorf_t	color;
+	c3f shininess;
 	struct c3pixels_t * texture;
 	struct c3program_t * program;
 	struct {
@@ -104,7 +105,8 @@ typedef struct c3geometry_t {
 	struct c3object_t * object;	// parent object
 	const struct c3driver_geometry_t ** driver;
 
-	c3bbox_t			bbox;	// world aligned bounding box
+	c3bbox_t			bbox;		// bounding box
+	c3bbox_t			wbbox;		// world aligned bounding box
 	c3vertex_array_t 	vertice;
 	c3tex_array_t		textures;	// optional: texture coordinates
 	c3vertex_array_t 	normals;	// optional: vertex normals
