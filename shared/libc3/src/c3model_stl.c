@@ -23,7 +23,7 @@
 #include "c3algebra.h"
 #include "c3geometry.h"
 #include "c3object.h"
-#include "c3stl.h"
+#include "c3model_stl.h"
 
 enum {
 	vertex_None = -1,
@@ -89,7 +89,7 @@ c3stl_load(
 					char * n = keyword + 6;
 					current_g = c3geometry_new(c3geometry_type(C3_TRIANGLE_TYPE, 0), o);
 					current_g->name = str_new(n);
-
+					current_g->dirty = 1;
 					state = 1;
 				}
 				break;
@@ -97,7 +97,7 @@ c3stl_load(
 				if (!strncmp(keyword, "facet ", 6)) {
 					c3vec3 normal;
 					_c3stl_read_vertex(keyword + 6, &normal);
-					normal = c3vec3_normalize(normal);
+					//normal = c3vec3_normalize(normal);
 					c3vertex_array_add(&current_g->normals, normal);
 					c3vertex_array_add(&current_g->normals, normal);
 					c3vertex_array_add(&current_g->normals, normal);
@@ -116,11 +116,22 @@ c3stl_load(
 					c3vec3 v;
 					_c3stl_read_vertex(keyword, &v);
 					c3vertex_array_add(&current_g->vertice, v);
-					state = 3;
+					current_g->bbox.min = c3vec3_min(current_g->bbox.min, v);
+					current_g->bbox.max = c3vec3_max(current_g->bbox.max, v);
+
+				//	state = 3;
 				} else if (!strncmp(keyword, "endloop", 7))
 					state = 2;
 				break;
 		}
+	}
+	printf("%s loaded %d geometries\n", filename, o->geometry.count);
+	if (current_g) {
+		c3geometry_p g = current_g;
+		printf("%s(%p) bbox = %.2f %.2f %.2f - %.2f %.2f %.2f\n",
+				g->name ? g->name->str : "?", g,
+				g->bbox.min.x, g->bbox.min.y, g->bbox.min.z,
+				g->bbox.max.x, g->bbox.max.y, g->bbox.max.z);
 	}
 
 	fclose(f);
