@@ -68,6 +68,37 @@ c3context_dispose(
 
 static c3context_view_p qsort_view;
 
+void
+c3_bbox_vertices(
+		c3bbox_t * b,
+		c3vec3 out[8])
+{
+	out[0] = c3vec3f(b->min.x, b->min.y, b->min.z);
+	out[1] = c3vec3f(b->min.x, b->min.y, b->max.z);
+	out[2] = c3vec3f(b->max.x, b->min.y, b->min.z);
+	out[3] = c3vec3f(b->max.x, b->min.y, b->max.z);
+	out[4] = c3vec3f(b->max.x, b->max.y, b->min.z);
+	out[5] = c3vec3f(b->max.x, b->max.y, b->max.z);
+	out[6] = c3vec3f(b->min.x, b->max.y, b->min.z);
+	out[7] = c3vec3f(b->min.x, b->max.y, b->max.z);
+}
+
+static void
+_c3_minmax_distance2(
+		c3vec3 * in,
+		int count,
+		c3vec3 pt,
+		c3f * min, c3f * max)
+{
+	for (int i = 0; i < count; i++) {
+		c3f d = c3vec3_length2(c3vec3_sub(in[i], pt));
+		if (i == 0 || d < *min)
+			*min = d;
+		if (i == 0 || d > *max)
+			*max = d;
+	}
+}
+
 /*
  * Computes the distance from the 'eye' of the camera, sort by this value
  */
@@ -78,31 +109,35 @@ _c3_z_sorter(
 {
 	c3geometry_p g1 = *(c3geometry_p*)_p1;
 	c3geometry_p g2 = *(c3geometry_p*)_p2;
-	// get center of bboxes
-	c3vec3 c1 = c3vec3_add(g1->bbox.min, c3vec3_divf(c3vec3_sub(g1->bbox.max, g1->bbox.min), 2));
-	c3vec3 c2 = c3vec3_add(g2->bbox.min, c3vec3_divf(c3vec3_sub(g2->bbox.max, g2->bbox.min), 2));
-
 	c3cam_p cam = &qsort_view->cam;
-	c3f d1 = c3vec3_length2(c3vec3_sub(c1, cam->eye));
-	c3f d2 = c3vec3_length2(c3vec3_sub(c2, cam->eye));
 
-	if (d1 > qsort_view->z.max) qsort_view->z.max = d1;
-	if (d1 < qsort_view->z.min) qsort_view->z.min = d1;
-	if (d2 > qsort_view->z.max) qsort_view->z.max = d2;
-	if (d2 < qsort_view->z.min) qsort_view->z.min = d2;
+	c3vec3	v1[8], v2[8];
+	c3_bbox_vertices(&g1->wbbox, v1);
+	c3_bbox_vertices(&g2->wbbox, v2);
+
+	c3f 	d1min, d1max;
+	c3f 	d2min, d2max;
+
+	_c3_minmax_distance2(v1, 8, cam->eye, &d1min, &d1max);
+	_c3_minmax_distance2(v2, 8, cam->eye, &d2min, &d2max);
+
+	if (d1max > qsort_view->z.max) qsort_view->z.max = d1max;
+	if (d1min < qsort_view->z.min) qsort_view->z.min = d1min;
+	if (d2max > qsort_view->z.max) qsort_view->z.max = d2max;
+	if (d2min < qsort_view->z.min) qsort_view->z.min = d2min;
 	/*
 	 * make sure transparent items are drawn after everyone else
 	 */
 	if (g1->mat.color.n[3] < 1)
-		d1 -= 100000.0;
+		d1min -= 100000.0;
 	if (g2->mat.color.n[3] < 1)
-		d2 -= 100000.0;
+		d2min -= 100000.0;
 	if (g1->type.type == C3_LIGHT_TYPE)
-		d1 = -200000 + (int)((intptr_t)((c3light_p)g1)->light_id);
+		d1min = -200000 + (int)((intptr_t)((c3light_p)g1)->light_id);
 	if (g2->type.type == C3_LIGHT_TYPE)
-		d2 = -200000 + (int)((intptr_t)((c3light_p)g2)->light_id);
+		d2min = -200000 + (int)((intptr_t)((c3light_p)g2)->light_id);
 
-	return d1 < d2 ? 1 : d1 > d2 ? -1 : 0;
+	return d1min < d2min ? -1 : d1min > d2min ? 1 : 0;
 }
 
 int
@@ -131,7 +166,6 @@ c3context_project(
 	c3context_view_p v = qsort_view = c3context_view_get(c);
 	if (v->dirty) {
 		res++;
-	    c3cam_update_matrix(&v->cam);
 
 		c3geometry_array_p  array = &c3context_view_get(c)->projected;
 		c3geometry_array_clear(array);
@@ -143,17 +177,19 @@ c3context_project(
 		qsort(v->projected.e,
 				v->projected.count, sizeof(v->projected.e[0]),
 		        _c3_z_sorter);
-		v->z.min = sqrt(v->z.min) * 0.5f;
+		v->z.min = sqrt(v->z.min) * 0.8f;
 		v->z.max = sqrt(v->z.max);
 
 		/*
 		 * Recalculate the perspective view using the new Z values
 		 */
-		v->projection = perspective3D(
+		if (v->cam.fov > 0) {
+			c3cam_update_matrix(&v->cam);
+			v->projection = perspective3D(
 				v->cam.fov,
 				v->size.x / v->size.y,
 				v->z.min, v->z.max);
-
+		}
 		v->dirty = 0;
 	}
 	return res;
