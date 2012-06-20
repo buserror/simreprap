@@ -152,27 +152,28 @@ static void
 _c3_load_pixels(
 		c3pixels_p pix)
 {
-	GLuint mode = pix->normalize ? GL_TEXTURE_2D : GL_TEXTURE_RECTANGLE_ARB;
+	GLuint mode = pix->rectangle ? GL_TEXTURE_RECTANGLE_ARB : GL_TEXTURE_2D;
 	if (!pix->texture) {
-		if (pix->trace)
-			printf("%s Creating texture %s %dx%d\n",
-				__func__, pix->name ? pix->name->str : "", pix->w, pix->h);
 		pix->dirty = 1;
 		GLuint texID = 0;
 		GLCHECK(glEnable(mode));
 
 		glGenTextures(1, &texID);
-//		glTexEnvf( GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE,
-//				GL_MODULATE); //set texture environment parameters
-//		dumpError("glTexEnvf");
-
+		//	if (pix->trace)
+				printf("%s Creating texture %s %dx%d (id %d)\n",
+					__func__, pix->name ? pix->name->str : "", pix->w, pix->h, texID);
+		GLCHECK(glBindTexture(mode, texID));
+		glTexEnvf( GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
+		glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
 		glPixelStorei(GL_UNPACK_ROW_LENGTH, pix->row / pix->psize);
 		GLCHECK(glTexParameteri(mode, GL_TEXTURE_MAG_FILTER, GL_LINEAR));
 		GLCHECK(glTexParameteri(mode, GL_TEXTURE_MIN_FILTER,
-				pix->normalize ? GL_LINEAR_MIPMAP_LINEAR : GL_LINEAR));
-		GLCHECK(glTexParameteri(mode, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER));
-		GLCHECK(glTexParameteri(mode, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER));
-		if (pix->normalize)
+				pix->rectangle ? GL_LINEAR : GL_LINEAR_MIPMAP_LINEAR));
+//		GLCHECK(glTexParameteri(mode, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER));
+//		GLCHECK(glTexParameteri(mode, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER));
+//		GLCHECK(glTexParameteri(mode, GL_TEXTURE_WRAP_S, GL_CLAMP));
+//		GLCHECK(glTexParameteri(mode, GL_TEXTURE_WRAP_T, GL_CLAMP));
+		if (!pix->rectangle)
 			GLCHECK(glTexParameteri(mode, GL_GENERATE_MIPMAP, GL_TRUE));
 	#if 1
 		GLfloat fLargest;
@@ -180,7 +181,7 @@ _c3_load_pixels(
 		//printf("fLargest = %f\n", fLargest);
 		GLCHECK(glTexParameterf(mode, GL_TEXTURE_MAX_ANISOTROPY_EXT, fLargest));
 	#endif
-		if (pix->normalize)
+		if (!pix->rectangle)
 			GLCHECK(glGenerateMipmap(mode));
 
 		pix->texture = C3APIO(texID);
@@ -190,15 +191,27 @@ _c3_load_pixels(
 		pix->dirty = 0;
 		if (pix->base) {
 			GLCHECK(glBindTexture(mode, C3APIO_INT(pix->texture)));
+			static const struct {
+				int gltype;
+				int glsub;
+			} map[] = {
+				[C3PIXEL_ARGB] = { .gltype = GL_RGBA8, .glsub = GL_RGBA, },
+				[C3PIXEL_RGB] = { .gltype = GL_RGB8, .glsub = GL_RGB,},
+				[C3PIXEL_LUMINANCE] = { .gltype = GL_LUMINANCE, .glsub = GL_LUMINANCE,},
+				[C3PIXEL_ALPHA] = { .gltype = GL_ALPHA, .glsub = GL_ALPHA,},
+			};
+
 			glTexImage2D(mode, 0,
-					pix->format == C3PIXEL_A ? GL_ALPHA16 : GL_RGBA8,
+					map[pix->format].gltype,
 					pix->w, pix->h, 0,
-					pix->format == C3PIXEL_A ? GL_ALPHA : GL_BGRA,
+					map[pix->format].glsub,
 					GL_UNSIGNED_BYTE,
 					pix->base);
 			dumpError("glTexImage2D");
-			if (pix->normalize)
+			if (!pix->rectangle)
 				GLCHECK(glGenerateMipmap(mode));
+			if (!pix->mutable)
+				c3pixels_purge(pix);
 		}
 	}
 }
@@ -349,6 +362,11 @@ _c3_geometry_project(
 	C3_DRIVER_INHERITED(c, d, geometry_project, g, m);
 }
 
+void // TODO cleanup
+c3_bbox_vertices(
+		c3bbox_t * b,
+		c3vec3 out[8]);
+
 /*
  * This id the meta function that draws a c3geometry. It looks for normals,
  * indices, textures and so on and call the glDrawArrays
@@ -370,6 +388,7 @@ _c3_geometry_draw(
 	else
 		printf("%s draw %p\n", __func__, g);
 #endif
+	glMaterialfv(GL_FRONT, GL_SHININESS, &g->mat.shininess);
 
 	switch(g->type.type) {
 		case C3_LIGHT_TYPE: {
@@ -391,10 +410,9 @@ _c3_geometry_draw(
 
 	GLCHECK(glBindVertexArray(C3APIO_INT(g->bid)));
 
-	glDisable(GL_TEXTURE_2D);
+	//glDisable(GL_TEXTURE_2D);
 	if (g->mat.texture) {
-		GLuint mode = g->mat.texture->normalize ?
-				GL_TEXTURE_2D : GL_TEXTURE_RECTANGLE_ARB;
+		GLuint mode = g->mat.texture->rectangle ? GL_TEXTURE_RECTANGLE_ARB : GL_TEXTURE_2D;
 		glEnable(mode);
 		if (g->mat.texture->trace)
 			printf("%s view %d uses texture %s(%d) (%d tex)\n",
@@ -419,7 +437,7 @@ _c3_geometry_draw(
 	glBindVertexArray(0);
 
 	if (g->mat.texture)
-		glDisable(g->mat.texture->normalize ? GL_TEXTURE_2D : GL_TEXTURE_RECTANGLE_ARB);
+		glDisable(g->mat.texture->rectangle ? GL_TEXTURE_RECTANGLE_ARB : GL_TEXTURE_2D);
 	if (g->mat.program)
 		glUseProgram(0);
 
@@ -436,6 +454,17 @@ _c3_geometry_draw(
 				glEnd();
 			}
 		}
+	}
+	if (0) {	// debug bounding boxes
+		c3vec3	v[8];
+		c3_bbox_vertices(&g->bbox, v);
+		glColor4f(0.0,0.0,1.0,1.0);
+		glPointSize(5);
+		glBegin(GL_POINTS);
+		for (int i = 0; i < 8; i++) {
+			glVertex3fv(v[i].n);
+		}
+		glEnd();
 	}
 	C3_DRIVER_INHERITED(c, d, geometry_draw, g);
 }
