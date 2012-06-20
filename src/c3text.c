@@ -80,7 +80,7 @@ c3font_manager_new()
 	res->tex = c3pixels_new(512, 512, 1, 512, NULL);
 	res->tex->name = str_new(__func__);
 	res->tex->texture = C3APIO(res->atlas->id);
-	res->tex->normalize = 1;
+	res->tex->format = C3PIXEL_LUMINANCE;
 	printf("%s texture %d\n", __func__, (int)res->atlas->id);
 	return res;
 }
