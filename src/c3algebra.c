@@ -468,10 +468,10 @@ c3vec4 c3vec4_apply(c3vec4 a, V_FCT_PTR fct)
 c3vec4 c3mat4_mulv4(const c3mat4p a, const c3vec4 v)
 {
     #define ROWCOL(i) \
-        a->v[i].n[0]*v.n[VX] + \
-        a->v[i].n[1]*v.n[VY] + \
-        a->v[i].n[2]*v.n[VZ] + \
-        a->v[i].n[3]*v.n[VW]
+        a->v[0].n[i] * v.n[VX] + \
+        a->v[1].n[i] * v.n[VY] + \
+        a->v[2].n[i] * v.n[VZ] + \
+        a->v[3].n[i] * v.n[VW]
 
     return c3vec4f(ROWCOL(0), ROWCOL(1), ROWCOL(2), ROWCOL(3));
 
@@ -486,7 +486,9 @@ c3vec4 c3vec4_mulm4(const c3vec4 v, const c3mat4p a)
 
 c3vec3 c3mat4_mulv3(const c3mat4p a, const c3vec3 v)
 {
-	return c3vec3_vec4(c3mat4_mulv4(a, c3vec4_vec3(v)));
+//	return c3vec3_vec4(c3mat4_mulv4(a, c3vec4_vec3(v)));
+	c3vec4 v4 = c3mat4_mulv4(a, c3vec4_vec3(v));
+	return c3vec3f(v4.x,v4.y,v4.z);
 }
 
 c3vec4 c3vec4_minus(const c3vec4 a)
@@ -649,7 +651,9 @@ c3mat3 c3mat3_minus(const c3mat3p a)
 c3mat3 c3mat3_mul(const c3mat3p a, const c3mat3p b)
 {
     #define ROWCOL(i, j) \
-    a->v[i].n[0]*b->v[0].n[j] + a->v[i].n[1]*b->v[1].n[j] + a->v[i].n[2]*b->v[2].n[j]
+		a->v[i].n[0]*b->v[0].n[j] + \
+		a->v[i].n[1]*b->v[1].n[j] + \
+		a->v[i].n[2]*b->v[2].n[j]
 
     return c3mat3_vec3(
         c3vec3f(ROWCOL(0,0), ROWCOL(0,1), ROWCOL(0,2)),
@@ -878,13 +882,6 @@ c3mat4 c3mat4_divf(const c3mat4p a, c3f d)
 int c3mat4_equal(const c3mat4p a, const c3mat4p b)
 {
 	return !memcmp(a->n, b->n, sizeof(a->n));
-#if 0
-    return
-        c3vec4_equal(a->v[0], b->v[0]) &&
-        c3vec4_equal(a->v[1], b->v[1]) &&
-        c3vec4_equal(a->v[2], b->v[2]) &&
-        c3vec4_equal(a->v[3], b->v[3]);
-#endif
 }
 
 /****************************************************************
@@ -960,17 +957,17 @@ c3mat4 rotation3D(const c3vec3 Axis, c3f angleDeg)
     return c3mat4_vec4(
         c3vec4f(
         	t * axis.n[VX] * axis.n[VX] + c,
-        	t * axis.n[VX] * axis.n[VY] - s * axis.n[VZ],
-			t * axis.n[VX] * axis.n[VZ] + s * axis.n[VY],
-			0.0),
-        c3vec4f(
 			t * axis.n[VX] * axis.n[VY] + s * axis.n[VZ],
-			t * axis.n[VY] * axis.n[VY] + c,
-			t * axis.n[VY] * axis.n[VZ] - s * axis.n[VX],
+			t * axis.n[VX] * axis.n[VZ] - s * axis.n[VY],
 			0.0),
         c3vec4f(
-			t * axis.n[VX] * axis.n[VZ] - s * axis.n[VY],
+           	t * axis.n[VX] * axis.n[VY] - s * axis.n[VZ],
+			t * axis.n[VY] * axis.n[VY] + c,
 			t * axis.n[VY] * axis.n[VZ] + s * axis.n[VX],
+			0.0),
+        c3vec4f(
+   			t * axis.n[VX] * axis.n[VZ] + s * axis.n[VY],
+			t * axis.n[VY] * axis.n[VZ] - s * axis.n[VX],
 			t * axis.n[VZ] * axis.n[VZ] + c,
 			0.0),
         c3vec4f(0.0, 0.0, 0.0, 1.0));
@@ -985,18 +982,21 @@ c3mat4 rotation3Drad(const c3vec3 Axis, c3f angleRad)
     c3vec3 axis = c3vec3_normalize(Axis);
 
     return c3mat4_vec4(
-        c3vec4f(t * axis.n[VX] * axis.n[VX] + c,
-             t * axis.n[VX] * axis.n[VY] - s * axis.n[VZ],
-             t * axis.n[VX] * axis.n[VZ] + s * axis.n[VY],
-             0.0),
-        c3vec4f(t * axis.n[VX] * axis.n[VY] + s * axis.n[VZ],
-             t * axis.n[VY] * axis.n[VY] + c,
-             t * axis.n[VY] * axis.n[VZ] - s * axis.n[VX],
-             0.0),
-        c3vec4f(t * axis.n[VX] * axis.n[VZ] - s * axis.n[VY],
-             t * axis.n[VY] * axis.n[VZ] + s * axis.n[VX],
-             t * axis.n[VZ] * axis.n[VZ] + c,
-             0.0),
+        c3vec4f(
+        	t * axis.n[VX] * axis.n[VX] + c,
+			t * axis.n[VX] * axis.n[VY] + s * axis.n[VZ],
+			t * axis.n[VX] * axis.n[VZ] - s * axis.n[VY],
+			0.0),
+        c3vec4f(
+           	t * axis.n[VX] * axis.n[VY] - s * axis.n[VZ],
+			t * axis.n[VY] * axis.n[VY] + c,
+			t * axis.n[VY] * axis.n[VZ] + s * axis.n[VX],
+			0.0),
+        c3vec4f(
+   			t * axis.n[VX] * axis.n[VZ] + s * axis.n[VY],
+			t * axis.n[VY] * axis.n[VZ] - s * axis.n[VX],
+			t * axis.n[VZ] * axis.n[VZ] + c,
+			0.0),
         c3vec4f(0.0, 0.0, 0.0, 1.0));
 }
 
