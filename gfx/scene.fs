@@ -1,7 +1,7 @@
 uniform sampler2DShadow shadowMap ;
 
 // This define the value to move one pixel left or right
-uniform vec2 pixelOffset = vec2(1.0 / 1024, 1.0 / 1024);
+uniform vec2 pixelOffset;// = vec2(1.0 / 1024, 1.0 / 1024);
 uniform sampler2D tex0;
 varying vec2 texCoord;
 

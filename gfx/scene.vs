@@ -14,10 +14,9 @@ void main()
 	vec3 aux;
 	
 	/* first transform the normal into eye space and normalize the result */
-	normal = gl_Normal;
-		
-	normal = normalize(gl_NormalMatrix * normal);
-//	normal = gl_NormalMatrix * gl_Normal;
+//	normal = gl_Normal;		
+//	normal = normalize(gl_NormalMatrix * normal);
+	normal = gl_NormalMatrix * gl_Normal;
 	
 	/* now normalize the light's direction. Note that according to the
 	OpenGL specification, the light is stored in eye space. Also since 
@@ -38,9 +37,11 @@ void main()
 	ambient = gl_FrontMaterial.ambient * gl_LightSource[0].ambient;
 	ambientGlobal = gl_LightModel.ambient * gl_FrontMaterial.ambient;
 	
-	ShadowCoord= shadowMatrix * gl_Vertex;
+	vec4 pos = gl_ModelViewProjectionMatrix * gl_Vertex; //ftransform();
+	vec4 toeye = gl_TextureMatrix[7] * gl_ModelViewMatrix * gl_Vertex;
+	ShadowCoord= shadowMatrix * toeye;
 
-	gl_Position = ftransform();
+	gl_Position = pos;
     gl_TexCoord[0] = gl_MultiTexCoord0;
 	texCoord = gl_MultiTexCoord0.xy;
 }
