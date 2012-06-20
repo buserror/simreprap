@@ -20,6 +20,7 @@
 	along with libc3.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <stdlib.h>
 #include <string.h>
 #include "c3camera.h"
 
