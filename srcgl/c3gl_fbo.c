@@ -92,7 +92,8 @@ c3gl_fbo_create(
 		glGenTextures(1, &depthTextureId);
 		glBindTexture(GL_TEXTURE_2D, depthTextureId);
 
-		// GL_LINEAR does not make sense for depth texture. However, next tutorial shows usage of GL_LINEAR and PCF. Using GL_NEAREST
+		// does not make sense for depth texture. However,
+		// next tutorial shows usage of GL_LINEAR and PCF. Using GL_NEAREST
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 
@@ -108,9 +109,9 @@ c3gl_fbo_create(
 		//glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_COMPARE_MODE, GL_NONE );
 		//glTexParameteri( GL_TEXTURE_2D, GL_DEPTH_TEXTURE_MODE, GL_LUMINANCE );
 		// No need to force GL_DEPTH_COMPONENT24, drivers usually give you the max precision if available
-		glTexImage2D( GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT32,
+		glTexImage2D( GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT,
 				b->size.x, b->size.y,
-				0, GL_DEPTH_COMPONENT, GL_UNSIGNED_BYTE, 0);
+				0, GL_DEPTH_COMPONENT, GL_FLOAT, 0);
 		glBindTexture(GL_TEXTURE_2D, 0);
 		b->buffers[C3GL_FBO_DEPTH_TEX].bid = C3APIO(depthTextureId);
 	}
