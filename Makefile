@@ -39,21 +39,22 @@ VPATH = src
 VPATH += ${SIMAVR}/examples/parts
 VPATH += ${SIMAVR}/examples/shared
 
+export PKG_CONFIG_PATH=/usr/local/build/lib/pkgconfig
+
 # for the Open Motion Controller board
-CPPFLAGS += -DMOTHERBOARD=91
-CPPFLAGS += ${shell pkg-config --cflags pangocairo}
+CPPFLAGS := -DMOTHERBOARD=91
+CPPFLAGS += ${shell pkg-config --cflags IL 2>/dev/null}
 CPPFLAGS += ${shell freetype-config --cflags}
+CPPFLAGS += ${patsubst %,-I%,${subst :, ,${IPATH}}}
 
-include ${SIMAVR}/examples/Makefile.opengl
-
-LDFLAGS += ${shell pkg-config --libs pangocairo}
+LDFLAGS = ${shell pkg-config --libs IL 2>/dev/null}
 LDFLAGS += -lpthread -lutil -ldl
 LDFLAGS += -lm
 LDFLAGS += -Wl,-rpath $(LIBC3)/${OBJ}/.libs -L$(LIBC3)/${OBJ}/.libs -lc3 -lc3gl
 LDFLAGS += -Wl,-rpath ${SIMAVR}/simavr/${OBJ} -L${SIMAVR}/simavr/${OBJ} 
 LDFLAGS += -L${FTGL}/${OBJ} -lfreetype-gl ${shell freetype-config --libs} 
 
-CPPFLAGS	+= ${patsubst %,-I%,${subst :, ,${IPATH}}}
+include ${SIMAVR}/examples/Makefile.opengl
 
 all: obj ${firmware} ${target}
 
@@ -86,5 +87,6 @@ clean: clean-${OBJ}
 	rm -rf *.a *.axf ${target} *.vcd
 	$(MAKE) -C $(LIBC3) CC="$(CC)" CFLAGS="$(CFLAGS)" clean
 	$(MAKE) -C $(SIMAVR)/simavr CC="$(CC)" CFLAGS="$(CFLAGS)" clean
-	
+	$(MAKE) -C $(FTGL) CC="$(CC)" CPPFLAGS="$(CPPFLAGS)" \
+		CFLAGS="$(CFLAGS)" clean	
 
