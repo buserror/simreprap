@@ -65,19 +65,21 @@ _c3geometry_project(
 	 * if it had been purged, the element count might remain
 	 * but the array size is zero
 	 */
-	if (g->vertice.count < g->vertice.size) {
+	if (g->vertice.count && g->vertice.e) {
 		for (int vi = 0; vi < g->vertice.count; vi++) {
-			c3vec3 v = c3mat4_mulv3(m, g->vertice.e[vi]);
+			c3vec3 v = g->vertice.e[vi];
 			if (vi == 0)
 				g->bbox.min = g->bbox.max = v;
 			else {
-				g->bbox.max = c3vec3_min(g->bbox.min, v);
+				g->bbox.min = c3vec3_min(g->bbox.min, v);
 				g->bbox.max = c3vec3_max(g->bbox.max, v);
 			}
 		}
 	}
-	/* else -- do not clear bbox on purged arrays
-		g->bbox.min = g->bbox.max = c3vec3f(0,0,0); */
+	/* else -- do not clear bbox on purged arrays */
+
+	g->wbbox.max = c3mat4_mulv3(m, g->bbox.max);
+	g->wbbox.min = c3mat4_mulv3(m, g->bbox.min);
 
 	if (g->object && g->object->context)
 		C3_DRIVER(g->object->context, geometry_project, g, m);
