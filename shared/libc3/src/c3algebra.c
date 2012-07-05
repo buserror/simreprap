@@ -488,7 +488,7 @@ c3vec3 c3mat4_mulv3(const c3mat4p a, const c3vec3 v)
 {
 //	return c3vec3_vec4(c3mat4_mulv4(a, c3vec4_vec3(v)));
 	c3vec4 v4 = c3mat4_mulv4(a, c3vec4_vec3(v));
-	return c3vec3f(v4.x,v4.y,v4.z);
+	return v4.v3;
 }
 
 c3vec4 c3vec4_minus(const c3vec4 a)

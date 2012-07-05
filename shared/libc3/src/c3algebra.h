@@ -43,17 +43,24 @@ typedef c3f (*V_FCT_PTR)(c3f);
 
 typedef union c3vec2 {
 	struct { c3f x,y; };
+	struct { c3f width,height; };
 	c3f n[2];
 } c3vec2;
 
 typedef union c3vec3 {
 	struct { c3f x,y,z; };
+	struct { c3f r,g,b; };
 	c3f n[3];
+	c3vec2 v2;
 } c3vec3;
 
 typedef union c3vec4 {
 	struct { c3f x,y,z,w; };
+	struct { c3f r,g,b,a; };
+	struct { c3f ka,kd,ks,es; };
+	struct { c3f _x,_y,width,height; };
 	c3f n[4];
+	c3vec3	v3;
 } c3vec4, * c3vec4p;
 
 typedef union c3mat3 {
