@@ -26,6 +26,10 @@
 #include "c3types.h"
 #include "c_utils.h"
 
+#if __cplusplus
+extern "C" {
+#endif
+
 typedef struct c3shader_t {
 	c3apiobject_t sid;	// shader id
 	uint32_t type;
@@ -98,5 +102,9 @@ c3program_locate_param(
 IMPLEMENT_C_ARRAY(c3program_param_array);
 IMPLEMENT_C_ARRAY(c3shader_array);
 IMPLEMENT_C_ARRAY(c3program_array);
+
+#if __cplusplus
+}
+#endif
 
 #endif /* __C3PROGRAM_H___ */

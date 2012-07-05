@@ -40,6 +40,10 @@ enum {
 	C3CUBE_FACE_ALL = 0x3f,
 };
 
+#if __cplusplus
+extern "C" {
+#endif
+
 c3geometry_p
 c3cube_new(
 		c3vec3 position,
@@ -54,5 +58,9 @@ c3cube_add(
 		c3vec3 size,
 		uint16_t	flags,
 		struct c3object_t * parent);
+
+#if __cplusplus
+}
+#endif
 
 #endif /* __C3CUBE_H___ */

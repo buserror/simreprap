@@ -33,6 +33,10 @@ typedef struct c3cam_t {
 	c3f fov;
 } c3cam_t, *c3cam_p;
 
+#if __cplusplus
+extern "C" {
+#endif
+
 /******************************* set_distance() ***********/
 /* This readjusts the distance from the eye to the lookat */
 /* (changing the eye point in the process)                */
@@ -232,5 +236,9 @@ c3cam_init(
 /* direct changes to the vectors or points of this class */
 void c3cam_update(
 		c3cam_p c);
+
+#if __cplusplus
+}
+#endif
 
 #endif /* __C3VIEW_H___ */

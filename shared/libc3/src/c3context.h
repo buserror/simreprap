@@ -29,6 +29,10 @@
 #include "c3program.h"
 #include "c3camera.h"
 
+#if __cplusplus
+extern "C" {
+#endif
+
 enum {
 	C3_CONTEXT_VIEW_NONE = 0,
 	C3_CONTEXT_VIEW_EYE,
@@ -135,5 +139,9 @@ c3context_view_set(
 	if (view < c->views.count)
 		c->current = view;
 }
+
+#if __cplusplus
+}
+#endif
 
 #endif /* __C3CONTEXT_H___ */

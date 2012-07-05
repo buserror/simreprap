@@ -25,6 +25,10 @@
 
 #include "c3algebra.h"
 
+#if __cplusplus
+extern "C" {
+#endif
+
 enum {
 	C3_SPHERE_TYPE = C3_TYPE('s','p','h','e'),
 };
@@ -36,5 +40,9 @@ c3sphere_uv(
 		c3f radius,
 		int rings,
 		int sectors );
+
+#if __cplusplus
+}
+#endif
 
 #endif /* __C3SPHERE_H___ */

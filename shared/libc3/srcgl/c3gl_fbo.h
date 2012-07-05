@@ -25,6 +25,10 @@
 
 #include "c3types.h"
 
+#if __cplusplus
+extern "C" {
+#endif
+
 enum {
 	C3GL_FBO_COLOR	= 0,
 	C3GL_FBO_DEPTH,
@@ -55,5 +59,9 @@ c3gl_fbo_resize(
 void
 c3gl_fbo_dispose(
 		c3gl_fbo_p b );
+
+#if __cplusplus
+}
+#endif
 
 #endif /* __C3GL_FBO_H___ */

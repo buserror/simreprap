@@ -31,6 +31,10 @@
 #endif
 #include "c_array.h"
 
+#if __cplusplus
+extern "C" {
+#endif
+
 /********************************************************************
  * CRC16
  ********************************************************************/
@@ -173,5 +177,9 @@ void *
 str_hash_lookup(
 	str_hash_p h, 
 	str_p k );
+
+#if __cplusplus
+}
+#endif
 
 #endif /* __C_UTILS_H__ */

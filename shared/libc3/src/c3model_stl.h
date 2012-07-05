@@ -23,6 +23,10 @@
 #ifndef __C3STL_H___
 #define __C3STL_H___
 
+#if __cplusplus
+extern "C" {
+#endif
+
 /*
  * Loads an ASCII (TODO: Load STL Binary?) STL file as a c3object with
  * a set of c3geometries with the triangles
@@ -31,5 +35,9 @@ struct c3object_t *
 c3stl_load(
 		const char * filename,
 		struct c3object_t * parent);
+
+#if __cplusplus
+}
+#endif
 
 #endif /* __C3STL_H___ */

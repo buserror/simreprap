@@ -27,6 +27,10 @@
 #include "c3transform.h"
 #include "c3geometry.h"
 
+#if __cplusplus
+extern "C" {
+#endif
+
 struct c3object_t;
 
 DECLARE_C_ARRAY(struct c3object_t*, c3object_array, 4);
@@ -120,5 +124,9 @@ c3object_project(
 		const c3mat4p m);
 
 IMPLEMENT_C_ARRAY(c3object_array);
+
+#if __cplusplus
+}
+#endif
 
 #endif /* __C3OBJECT_H___ */

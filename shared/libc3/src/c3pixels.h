@@ -57,6 +57,10 @@ typedef struct c3pixels_t {
 	int			refCount;	// TODO: Implement reference counting ?
 } c3pixels_t, *c3pixels_p;
 
+#if __cplusplus
+extern "C" {
+#endif
+
 DECLARE_C_ARRAY(c3pixels_p, c3pixels_array, 4);
 
 //! Allocates a new c3pixels, also allocates the pixels if row == NULL
@@ -108,5 +112,9 @@ c3pixels_zero(
 		c3pixels_p p);
 
 IMPLEMENT_C_ARRAY(c3pixels_array);
+
+#if __cplusplus
+}
+#endif
 
 #endif /* __C3PIXELS_H___ */

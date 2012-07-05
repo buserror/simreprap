@@ -32,6 +32,9 @@
 #include "c3types.h"
 #include "c_utils.h"
 
+#if __cplusplus
+extern "C" {
+#endif
 
 struct c3object_t;
 struct c3pixels_t;
@@ -215,5 +218,9 @@ c3geometry_type(uint32_t type, int subtype)
 	r.type = type; r.subtype = C3APIO(subtype);
 	return r;
 }
+
+#if __cplusplus
+}
+#endif
 
 #endif /* __C3GEOMETRY_H___ */

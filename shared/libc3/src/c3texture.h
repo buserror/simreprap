@@ -26,6 +26,10 @@
 #include "c3geometry.h"
 #include "c3pixels.h"
 
+#if __cplusplus
+extern "C" {
+#endif
+
 enum {
 	C3_TEXTURE_TYPE = C3_TYPE('t','e','x','u'),
 };
@@ -46,5 +50,9 @@ void
 c3texture_resize(
 		c3texture_p t,
 		c3vec2 size );
+
+#if __cplusplus
+}
+#endif
 
 #endif /* __C3TEXTURE_H___ */

@@ -26,6 +26,10 @@
 #include <stdbool.h>
 #include "c3algebra.h"
 
+#if __cplusplus
+extern "C" {
+#endif
+
 typedef struct c3quat {
   c3vec3  v;  	/* vector component */
   c3f s;  		/* scalar component */
@@ -89,5 +93,9 @@ c3quat_get_angle(
 c3vec3
 c3quat_get_axis(
 		c3quatp a);
+
+#if __cplusplus
+}
+#endif
 
 #endif /* __C3QUATERNION_H___ */

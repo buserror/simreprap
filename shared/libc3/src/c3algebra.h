@@ -73,6 +73,10 @@ typedef union c3mat4 {
 	c3f n[4*4];
 } c3mat4, * c3mat4p;
 
+#if __cplusplus
+extern "C" {
+#endif
+
 /*
  * c3vec2 related
  */
@@ -229,5 +233,9 @@ c3mat4	ortho3D(
 c3mat4	screen_ortho3D(
 		c3f left, c3f right, c3f bottom, c3f top,
 		c3f near, c3f far);
+
+#if __cplusplus
+}
+#endif
 
 #endif /* __C3ALGEBRA_H___ */

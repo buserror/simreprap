@@ -25,6 +25,10 @@
 
 #include "c3geometry.h"
 
+#if __cplusplus
+extern "C" {
+#endif
+
 enum {
 	C3_TEXT_TYPE = C3_TYPE('t','e','x','t'),
 };
@@ -69,5 +73,9 @@ c3text_set(
 		c3text_p t,
 		c3vec2 origin,
 		const char * str );
+
+#if __cplusplus
+}
+#endif
 
 #endif /* __C3TEXT_H___ */

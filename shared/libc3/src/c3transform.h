@@ -26,6 +26,10 @@
 #include "c3algebra.h"
 #include "c_utils.h"
 
+#if __cplusplus
+extern "C" {
+#endif
+
 typedef struct c3transform_t {
 	str_p name;
 	struct c3object_t * object;
@@ -45,5 +49,9 @@ c3transform_dispose(
 
 DECLARE_C_ARRAY(c3transform_p, c3transform_array, 4);
 IMPLEMENT_C_ARRAY(c3transform_array);
+
+#if __cplusplus
+}
+#endif
 
 #endif /* __C3TRANSFORM_H___ */

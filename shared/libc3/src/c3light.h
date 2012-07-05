@@ -42,6 +42,10 @@ typedef struct c3light_t {
 	} color;
 } c3light_t, *c3light_p;
 
+#if __cplusplus
+extern "C" {
+#endif
+
 c3light_p
 c3light_new(
 		struct c3object_t * o /* = NULL */);
@@ -50,5 +54,9 @@ c3light_p
 c3light_init(
 		c3light_p l,
 		struct c3object_t * o /* = NULL */);
+
+#if __cplusplus
+}
+#endif
 
 #endif /* __C3LIGHT_H___ */

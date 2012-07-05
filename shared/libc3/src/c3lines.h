@@ -25,6 +25,10 @@
 
 #include "c3geometry.h"
 
+#if __cplusplus
+extern "C" {
+#endif
+
 enum {
 	C3_LINES_TYPE = C3_TYPE('l','i','n','e'),
 };
@@ -49,5 +53,9 @@ c3lines_init(
 		c3vertex_p  vertices,		// points A,B pairs
 		size_t		count,
 		c3f 		lineWidth);
+
+#if __cplusplus
+}
+#endif
 
 #endif /* __C3LINES_H___ */

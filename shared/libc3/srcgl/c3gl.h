@@ -23,11 +23,21 @@
 #ifndef __C3GL_H___
 #define __C3GL_H___
 
+#include "c3program.h"
+
+#if __cplusplus
+extern "C" {
+#endif
+
 const struct c3driver_context_t *
 c3gl_getdriver();
 
 int
 c3gl_program_load(
 		c3program_p p);
+
+#if __cplusplus
+}
+#endif
 
 #endif /* __C3GL_H___ */

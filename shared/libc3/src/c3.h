@@ -29,7 +29,15 @@
 #include "c3transform.h"
 #include "c3texture.h"
 
+#if __cplusplus
+extern "C" {
+#endif
+
 const char *
 c3version();
+
+#if __cplusplus
+}
+#endif
 
 #endif /* __C3_H___ */

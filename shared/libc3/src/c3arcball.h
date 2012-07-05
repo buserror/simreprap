@@ -67,6 +67,10 @@ typedef struct c3arcball {
     c3f		radius, damp_factor;
 } c3arcball, *c3arcballp;
 
+#if __cplusplus
+extern "C" {
+#endif
+
 void
 c3arcball_init(
 		c3arcballp a );
@@ -121,5 +125,9 @@ void
 c3arcball_set_damping(
 		c3arcballp a,
 		c3f d);
+
+#if __cplusplus
+}
+#endif
 
 #endif /* __C3ARCBALL_H___ */
