@@ -308,7 +308,6 @@ _gl_display_cb(void)		/* function called whenever redisplay needed */
 	dumpError("glBindFramebuffer 0");
 	glViewport(0, 0, view->size.x, view->size.y);
 
-//	glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
 	glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
@@ -320,7 +319,6 @@ _gl_display_cb(void)		/* function called whenever redisplay needed */
 	glUseProgram(0);
 
 	glMatrixMode(GL_PROJECTION); // Select projection matrix
-//	glLoadIdentity(); // Start with an identity matrix
 
 	hud->views.e[0].cam.mtx = identity3D();
 	hud->views.e[0].projection = screen_ortho3D(0, _w, 0, _h, 0, 10);
@@ -493,14 +491,20 @@ gl_init(
 	/*
 	 * Extract the GLSL version as a numeric value for later
 	 */
-	const char * glsl = (const char *)glGetString(GL_SHADING_LANGUAGE_VERSION);
+	str_p glsl = str_new((const char *)glGetString(GL_SHADING_LANGUAGE_VERSION));
 	{
+		char * dup = strdup(glsl->str);
+		char * base = dup;
+		char * vs = strsep(&base, "");
+		char * vendor = strsep(&base, " ");
 		int M = 0, m = 0;
-		if (sscanf(glsl, "%d.%d", &M, &m) == 2)
+		if (sscanf(vs, "%d.%d", &M, &m) == 2)
 			glsl_version = (M * 100) + m;
-
+		free(dup);
 	}
-	printf("GL_SHADING_LANGUAGE_VERSION %s = %d\n", glsl, glsl_version);
+	if (glsl_version > 130)
+		glsl_version = 130;
+	printf("GL_SHADING_LANGUAGE_VERSION '%s' = %d\n", glsl->str, glsl_version);
 
 	c3gl_fbo_create(&fbo, c3vec2f(_w, _h), (1 << C3GL_FBO_COLOR)|(1 << C3GL_FBO_DEPTH));
 	// shadow buffer
