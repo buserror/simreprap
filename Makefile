@@ -39,12 +39,12 @@ VPATH = src
 VPATH += ${SIMAVR}/examples/parts
 VPATH += ${SIMAVR}/examples/shared
 
-export PKG_CONFIG_PATH=/usr/local/build/lib/pkgconfig
+FTC	  = ${shell PATH="$(PATH):/usr/X11/bin" which freetype-config}
 
 # for the Open Motion Controller board
 CPPFLAGS := -DMOTHERBOARD=91
 CPPFLAGS += ${shell pkg-config --cflags IL 2>/dev/null}
-CPPFLAGS += ${shell freetype-config --cflags}
+CPPFLAGS += ${shell $(FTC) --cflags}
 CPPFLAGS += ${patsubst %,-I%,${subst :, ,${IPATH}}}
 
 LDFLAGS = ${shell pkg-config --libs IL 2>/dev/null}
@@ -52,7 +52,7 @@ LDFLAGS += -lpthread -lutil -ldl
 LDFLAGS += -lm
 LDFLAGS += -Wl,-rpath $(LIBC3)/${OBJ}/.libs -L$(LIBC3)/${OBJ}/.libs -lc3 -lc3gl
 LDFLAGS += -Wl,-rpath ${SIMAVR}/simavr/${OBJ} -L${SIMAVR}/simavr/${OBJ} 
-LDFLAGS += -L${FTGL}/${OBJ} -lfreetype-gl ${shell freetype-config --libs} 
+LDFLAGS += -L${FTGL}/${OBJ} -lfreetype-gl ${shell $(FTC) --libs} 
 
 include ${SIMAVR}/examples/Makefile.opengl
 

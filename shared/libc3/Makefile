@@ -92,7 +92,12 @@ install:
 	mkdir -p $(DESTDIR)/lib/pkgconfig $(DESTDIR)/include/c3
 	rm -f $(DESTDIR)/lib/libc3* $(DESTDIR)/include/c3/*
 	$(INSTALL) src/*.h $(DESTDIR)/include/c3/
-	cp -a ${OBJ}/.libs/*.a ${OBJ}/.libs/*.so* $(DESTDIR)/lib/
+	cp -a ${OBJ}/.libs/*.a $(DESTDIR)/lib/
+ifeq (${PLATFORM}, darwin)
+	cp ${OBJ}/.libs/*.dylib* $(DESTDIR)/lib/
+else
+	cp ${OBJ}/.libs/*.so* $(DESTDIR)/lib/
+endif
 	sed -e 's|PREFIX|${DESTDIR}|g' -e 's|VERSION|${VERSION}|g' \
 		libc3.pc >$(DESTDIR)/lib/pkgconfig/libc3.pc 
 	 
