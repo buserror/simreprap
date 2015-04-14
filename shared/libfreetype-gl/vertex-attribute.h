@@ -406,7 +406,7 @@ vertex_attribute_delete( vertex_attribute_t * self );
  * @private
  */
   GLenum
-  GL_TYPE( char ctype );
+  _GL_TYPE( char ctype );
 
 
 /**

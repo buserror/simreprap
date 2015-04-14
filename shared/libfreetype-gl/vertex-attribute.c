@@ -135,7 +135,7 @@ vertex_attribute_parse( char *format )
             int size, index;
             char ctype;
             sscanf( format, "%dgn%d%c", &index, &size, &ctype );
-            GLenum type = GL_TYPE( ctype );
+            GLenum type = _GL_TYPE( ctype );
             return vertex_attribute_new( 0, index, size, type, GL_TRUE, 0, 0 );
         }
         else
@@ -143,7 +143,7 @@ vertex_attribute_parse( char *format )
             int size, index;
             char ctype;
             sscanf( format, "%dg%d%c", &index, &size, &ctype );
-            GLenum type = GL_TYPE( ctype );
+            GLenum type = _GL_TYPE( ctype );
             return vertex_attribute_new( 0, index, size, type, GL_FALSE, 0, 0 );
         }
     }
@@ -155,7 +155,7 @@ vertex_attribute_parse( char *format )
         int size;
         char ctarget, ctype;
         sscanf( format, "%c%d%c", &ctarget, &size, &ctype );
-        GLenum type = GL_TYPE( ctype );
+        GLenum type = _GL_TYPE( ctype );
         GLenum target = GL_VERTEX_ATTRIBUTE_TARGET( ctarget );
         return vertex_attribute_new( target, 0, size, type, GL_FALSE, 0, 0 );
     }
@@ -291,7 +291,7 @@ vertex_attribute_delete( vertex_attribute_t * self )
 
 // ----------------------------------------------------------------------------
 GLenum
-GL_TYPE( char ctype )
+_GL_TYPE( char ctype )
 {
     switch( ctype )
     {
