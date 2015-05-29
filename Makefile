@@ -20,6 +20,7 @@ CC = gcc
 target=	reprap
 firm_src = ${wildcard atmega*.c}
 firmware = ${firm_src:.c=.hex}
+PLATFORM	= ${shell uname | tr '[A-Z]' '[a-z]'}
 
 SIMAVR_R	= shared/simavr
 LIBC3		= shared/libc3
@@ -55,9 +56,13 @@ CPPFLAGS += ${patsubst %,-I%,${subst :, ,${IPATH}}}
 LDFLAGS = ${shell pkg-config --libs IL 2>/dev/null}
 LDFLAGS += -lpthread -lutil -ldl
 LDFLAGS += -lm
-LDFLAGS += -Wl,-rpath $(LIBC3)/${OBJ}/.libs -L$(LIBC3)/${OBJ}/.libs -lc3 -lc3gl
 LDFLAGS += -Wl,-rpath ${SIMAVR_R}/simavr/${OBJ} -L${SIMAVR_R}/simavr/${OBJ} 
 LDFLAGS += -L${FTGL}/${OBJ} -lfreetype-gl ${shell $(FTC) --libs} 
+ifeq (${PLATFORM}, darwin)
+  LDFLAGS += -Wl,-rpath $(LIBC3)/${OBJ}/ -L$(LIBC3)/${OBJ}/ -lc3 -lc3gl
+else
+  LDFLAGS += -Wl,-rpath $(LIBC3)/${OBJ}/.libs -L$(LIBC3)/${OBJ}/.libs -lc3 -lc3gl
+endif
 
 include ${SIMAVR_R}/examples/Makefile.opengl
 
@@ -79,8 +84,15 @@ ${board} : ${OBJ}/${target}_gl.o
 
 build-simavr:
 	$(MAKE) -C $(SIMAVR_R) CC="$(CC)" CFLAGS="$(CFLAGS)" build-simavr
+ifeq (${PLATFORM}, darwin)
 build-libc3:
 	$(MAKE) -C $(LIBC3) CC="$(CC)" CFLAGS="$(CFLAGS)"
+	cp ${LIBC3}/${OBJ}/libc3.dylib ${OBJ}
+	cp ${LIBC3}/${OBJ}/libc3gl.dylib ${OBJ}
+else
+build-libc3:
+	$(MAKE) -C $(LIBC3) CC="$(CC)" CFLAGS="$(CFLAGS)"
+endif
 build-ftgl:
 	$(MAKE) -C $(FTGL) CC="$(CC)" CPPFLAGS="$(CPPFLAGS)" \
 		CFLAGS="$(CFLAGS)" lib
