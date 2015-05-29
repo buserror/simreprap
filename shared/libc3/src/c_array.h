@@ -34,6 +34,15 @@
 #define C_ARRAY_SIZE_TYPE uint32_t
 #endif
 
+/* New compilers don't like unused static functions. However,
+ * we do like 'static inlines' for these small accessors,
+ * so we mark them as 'unused'. It stops it complaining */
+#ifdef __GNUC__
+#define C_ARRAY_DECL static __attribute__ ((unused))
+#else
+#define C_ARRAY_DECL static
+#endif
+
 #define DECLARE_C_ARRAY(__type, __name, __page, __args...) \
 enum { __name##_page_size = __page }; \
 typedef __type __name##_element_t; \
@@ -49,7 +58,7 @@ typedef struct __name##_t {\
 
 #define IMPLEMENT_C_ARRAY(__name) \
 static const __name##_t __name##_zero = C_ARRAY_NULL; \
-static C_ARRAY_INLINE \
+C_ARRAY_DECL C_ARRAY_INLINE \
 	void __name##_free(\
 			__name##_p a) \
 {\
@@ -58,14 +67,14 @@ static C_ARRAY_INLINE \
 	a->count = a->size = 0;\
 	a->e = NULL;\
 }\
-static C_ARRAY_INLINE \
+C_ARRAY_DECL C_ARRAY_INLINE \
 	void __name##_clear(\
 			__name##_p a) \
 {\
 	if (!a) return;\
 	a->count = 0;\
 }\
-static C_ARRAY_INLINE \
+C_ARRAY_DECL C_ARRAY_INLINE \
 	void __name##_realloc(\
 			__name##_p a, __name##_count_t size) \
 {\
@@ -74,7 +83,7 @@ static C_ARRAY_INLINE \
 	else a->e = realloc(a->e, size * sizeof(__name##_element_t));\
 	a->size = size; \
 }\
-static C_ARRAY_INLINE \
+C_ARRAY_DECL C_ARRAY_INLINE \
 	void __name##_trim(\
 			__name##_p a) \
 {\
@@ -84,7 +93,7 @@ static C_ARRAY_INLINE \
 	if (n != a->size)\
 		__name##_realloc(a, n);\
 }\
-static C_ARRAY_INLINE \
+C_ARRAY_DECL C_ARRAY_INLINE \
 	__name##_element_t * __name##_get_ptr(\
 			__name##_p a, __name##_count_t index) \
 {\
@@ -92,7 +101,7 @@ static C_ARRAY_INLINE \
 	if (index > a->count) index = a->count;\
 	return index < a->count ? a->e + index : NULL;\
 }\
-static C_ARRAY_INLINE \
+C_ARRAY_DECL C_ARRAY_INLINE \
 	__name##_count_t __name##_add(\
 			__name##_p a, __name##_element_t e) \
 {\
@@ -102,7 +111,7 @@ static C_ARRAY_INLINE \
 	a->e[a->count++] = e;\
 	return a->count;\
 }\
-static C_ARRAY_INLINE \
+C_ARRAY_DECL C_ARRAY_INLINE \
 	__name##_count_t __name##_insert(\
 			__name##_p a, __name##_count_t index, \
 			__name##_element_t * e, __name##_count_t count) \
@@ -118,7 +127,7 @@ static C_ARRAY_INLINE \
 	a->count += count;\
 	return a->count;\
 }\
-static C_ARRAY_INLINE \
+C_ARRAY_DECL C_ARRAY_INLINE \
 	__name##_count_t __name##_delete(\
 			__name##_p a, __name##_count_t index, __name##_count_t count) \
 {\
