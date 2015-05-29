@@ -44,7 +44,11 @@ DESTDIR		= /usr/local
 
 -include ${wildcard .make.options*}
 
+ifeq (${PLATFORM}, darwin)
+all:	${OBJ} src/$(CONFIG_H) ${OBJ}/libc3.dylib ${OBJ}/libc3gl.dylib
+else
 all:	${OBJ} src/$(CONFIG_H) ${OBJ}/libc3.la ${OBJ}/libc3gl.la
+endif
 
 ${OBJ}:
 	mkdir -p ${OBJ}
@@ -65,6 +69,18 @@ src/$(CONFIG_H): Makefile
 		printf "#define CONFIG_C3_CAIRO 1\n"; \
 	printf "#endif\n"; \
 	) >$@
+
+${OBJ}/libc3.dylib: ${C3OBJ}
+	@echo LINK $@
+	$(E)$(CC) -dynamiclib -undefined suppress \
+		-compatibility_version 1.0.0 -current_version 1.0.0 \
+		-flat_namespace ${C3OBJ:.lo=.o} -o $@ $(LDFLAGS)
+
+${OBJ}/libc3gl.dylib: ${C3GLOBJ}
+	@echo LINK $@
+	$(E)$(CC) -dynamiclib -undefined suppress \
+		-compatibility_version 1.0.0 -current_version 1.0.0 \
+		-flat_namespace ${C3GLOBJ:.lo=.o} -o $@ $(LDFLAGS)
 
 ${OBJ}/libc3.la: ${C3OBJ}
 	@echo LINK $@
