@@ -39,10 +39,12 @@ c3cube_add(
 					c3vec3f(0,0,0));
 	c3vec3 v[8] = {
 			c, c3vec3_add(c, c3vec3f(size.x, 0, 0)),
-			c3vec3_add(c, c3vec3f(size.x, size.y, 0)), c3vec3_add(c, c3vec3f(0, size.y, 0)),
-
-			c3vec3_add(c, c3vec3f(0, 0, -size.z)), c3vec3_add(c, c3vec3f(size.x, 0, -size.z)),
-			c3vec3_add(c, c3vec3f(size.x, size.y, -size.z)), c3vec3_add(c, c3vec3f(0, size.y, -size.z)),
+			c3vec3_add(c, c3vec3f(size.x, size.y, 0)),
+			c3vec3_add(c, c3vec3f(0, size.y, 0)),
+			c3vec3_add(c, c3vec3f(0, 0, -size.z)),
+			c3vec3_add(c, c3vec3f(size.x, 0, -size.z)),
+			c3vec3_add(c, c3vec3f(size.x, size.y, -size.z)),
+			c3vec3_add(c, c3vec3f(0, size.y, -size.z)),
 	};
 
 	static const struct {

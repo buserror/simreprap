@@ -50,15 +50,21 @@ c3sphere_uv(
 
 			c3tex_array_add(&g->textures, c3vec2f(s * S, r * R));
 			c3vertex_array_add(&g->vertice,
-					c3vec3_add(center, c3vec3f(x * radius, y * radius, z * radius)));
-			c3vertex_array_add(&g->normals, c3vec3_normalize(c3vec3f(x, y, z)));
+					c3vec3_add(center,
+							c3vec3f(x * radius, y * radius, z * radius)));
+			c3vertex_array_add(&g->normals,
+					c3vec3_normalize(c3vec3f(x, y, z)));
 		}
 
 	for (int r = 0; r < rings - 1; r++)
 		for (int s = 0; s < sectors - 1; s++) {
 			uint16_t i[6] = {
-				r * sectors + (s + 1), r * sectors + s, (r + 1) * sectors + (s + 1),
-				(r + 1) * sectors + (s + 1), r * sectors + s, (r + 1) * sectors + s,
+				r * sectors + (s + 1),
+				r * sectors + s,
+				(r + 1) * sectors + (s + 1),
+				(r + 1) * sectors + (s + 1),
+				r * sectors + s,
+				(r + 1) * sectors + s,
 			};
 			c3indices_array_insert(&g->indices, g->indices.count, i, 6);
 		}

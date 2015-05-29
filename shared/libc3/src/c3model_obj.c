@@ -62,7 +62,8 @@ c3obj_load(
 
 		char * keyword = strsep(&base, " ");
 
-		if (!strcmp(keyword, "v") || !strcmp(keyword, "vn") || !strcmp(keyword, "vt")) {
+		if (!strcmp(keyword, "v") || !strcmp(keyword, "vn") ||
+				!strcmp(keyword, "vt")) {
 			c3vec3 v;
 			int ci = 0;
 			char * cs;

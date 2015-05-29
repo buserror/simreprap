@@ -61,9 +61,9 @@ typedef struct c3driver_context_t {
 	 * delete resources like textures etc
 	 */
 	void (*geometry_dispose)(
-		struct c3context_t * c,
-		const struct c3driver_context_t *d,
-		struct c3geometry_t * g);
+			struct c3context_t * c,
+			const struct c3driver_context_t *d,
+			struct c3geometry_t * g);
 } c3driver_context_t, *c3driver_context_p;
 
 #endif /* __C3DRIVER_CONTEXT_H___ */

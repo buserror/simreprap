@@ -97,7 +97,8 @@ c3f c3vec2_length(const c3vec2 a)
     return (c3f) sqrt(c3vec2_length2(a));
 }
 
-c3vec2 c3vec2_normalize(const c3vec2 a) // it is up to caller to avoid divide-by-zero
+// it is up to caller to avoid divide-by-zero
+c3vec2 c3vec2_normalize(const c3vec2 a)
 {
     return c3vec2_divf(a, c3vec2_length(a));
 }
@@ -138,9 +139,15 @@ c3vec3 c3mat3_mulv3(const c3mat3p a, const c3vec3 v)
 {
     c3vec3 av;
 
-    av.n[VX] = a->v[0].n[VX]*v.n[VX] + a->v[0].n[VY]*v.n[VY] + a->v[0].n[VZ]*v.n[VZ];
-    av.n[VY] = a->v[1].n[VX]*v.n[VX] + a->v[1].n[VY]*v.n[VY] + a->v[1].n[VZ]*v.n[VZ];
-    av.n[VZ] = a->v[2].n[VX]*v.n[VX] + a->v[2].n[VY]*v.n[VY] + a->v[2].n[VZ]*v.n[VZ];
+    av.n[VX] = a->v[0].n[VX]*v.n[VX] +
+    		a->v[0].n[VY]*v.n[VY] +
+			a->v[0].n[VZ]*v.n[VZ];
+    av.n[VY] = a->v[1].n[VX]*v.n[VX] +
+    		a->v[1].n[VY]*v.n[VY] +
+			a->v[1].n[VZ]*v.n[VZ];
+    av.n[VZ] = a->v[2].n[VX]*v.n[VX] +
+    		a->v[2].n[VY]*v.n[VY] +
+			a->v[2].n[VZ]*v.n[VZ];
 
     return av;
 }
@@ -206,7 +213,8 @@ c3vec3 c3vec3f(c3f x, c3f y, c3f z)
 
 c3vec3 c3vec3_vec2f(const c3vec2 v, c3f d)
 {
-	c3vec3 n;// = { .x = v.x, .y = v.y, .z = d }; // older gcc <4.6 doesn't like this
+	// older gcc <4.6 doesn't like this
+	c3vec3 n;// = { .x = v.x, .y = v.y, .z = d };
 	n.x = v.x; n.y = v.y; n.z = d;
 	return n;
 }
@@ -216,7 +224,8 @@ c3vec3 c3vec3_vec2(const c3vec2 v)
 	return c3vec3_vec2f(v, 1.0);
 }
 
-c3vec3 c3vec3_vec4(const c3vec4 v) // it is up to caller to avoid divide-by-zero
+// it is up to caller to avoid divide-by-zero
+c3vec3 c3vec3_vec4(const c3vec4 v)
 {
 	c3vec3 n;
     n.n[VX] = v.n[VX] / v.n[VW];
@@ -593,7 +602,8 @@ c3mat3 c3mat3_transpose(const c3mat3p a)
         c3vec3f(a->v[0].n[2], a->v[1].n[2], a->v[2].n[2]));
 }
 
-c3mat3 c3mat3_inverse(const c3mat3p m)   // Gauss-Jordan elimination with partial pivoting
+// Gauss-Jordan elimination with partial pivoting
+c3mat3 c3mat3_inverse(const c3mat3p m)
 {
 	c3mat3 a = *m; // As a evolves from original mat into identity
 	c3mat3 b = c3mat3_identity(); // b evolves from identity into inverse(a)
@@ -684,7 +694,11 @@ c3mat4 c3mat4_identity()
     return identity3D();
 }
 
-c3mat4 c3mat4_vec4(const c3vec4 v0, const c3vec4 v1, const c3vec4 v2, const c3vec4 v3)
+c3mat4 c3mat4_vec4(
+		const c3vec4 v0,
+		const c3vec4 v1,
+		const c3vec4 v2,
+		const c3vec4 v3)
 {
 	c3mat4 m = { .v[0] = v0, .v[1] = v1, .v[2] = v2, .v[3] = v3 };
 	return m;
@@ -751,7 +765,8 @@ c3mat4 c3mat4_transpose(const c3mat4p a)
         c3vec4f(a->v[0].n[3], a->v[1].n[3], a->v[2].n[3], a->v[3].n[3]));
 }
 
-c3mat4 c3mat4_inverse(const c3mat4p m)       // Gauss-Jordan elimination with partial pivoting
+// Gauss-Jordan elimination with partial pivoting
+c3mat4 c3mat4_inverse(const c3mat4p m)
 {
 	c3mat4 a = *m; // As a evolves from original mat into identity
 	c3mat4 b = identity3D(); // b evolves from identity into inverse(a)
@@ -1020,7 +1035,8 @@ c3mat4	frustum3D(
     return c3mat4_vec4(
   		  c3vec4f(temp / temp2, 0.0, 0.0, 0.0),
 		  c3vec4f(0.0, temp / temp3, 0.0, 0.0),
-		  c3vec4f((right + left) / temp2, (top + bottom) / temp3, (-zfar - znear) / temp4, -1.0),
+		  c3vec4f((right + left) / temp2,
+				  (top + bottom) / temp3, (-zfar - znear) / temp4, -1.0),
 		  c3vec4f(-1.0, 0.0, (-temp * zfar) / temp4, 0.0));
 }
 

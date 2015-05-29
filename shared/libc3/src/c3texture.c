@@ -63,7 +63,8 @@ _c3texture_project(
 			c3vec2f(tw, 0), c3vec2f(0, 0)
 	};
 	if (p->trace)
-		printf("%s size %.0fx%.0f tex %.0fx%.0f\n", __func__, qs.x, qs.y, tw, th);
+		printf("%s size %.0fx%.0f tex %.0fx%.0f\n", __func__,
+				qs.x, qs.y, tw, th);
 	c3tex_array_clear(&t->geometry.textures);
 	c3tex_array_realloc(&t->geometry.textures, 4);
 	c3tex_array_insert(&t->geometry.textures, 0, ti, 4);
