@@ -25,6 +25,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
+#include <stdbool.h>
 #include <libgen.h>
 #include <pthread.h>
 
@@ -40,11 +41,32 @@
 #include "reprap.h"
 #include "arduidiot_pins.h"
 
-#define __AVR_ATmega644__
-#include "marlin/pins.h"
-
-#include <stdbool.h>
 #define PROGMEM
+
+#define MB(board) (MOTHERBOARD==BOARD_##board)
+
+#if (MOTHERBOARD == 632)
+	#define __AVR_ATmega2560__
+	#include "marlin/boards.h"
+	#define ARDUIDIOT_PINS arduidiot_2560
+	/*
+	 * A 'spurious' write to an AVR GPIO was inserted in the firmware
+	 * in the idle loop, and is trapped here; it allows the system
+	 * to 'sleep' a little and not eat 100% CPU on the host
+	 */
+	#define MEGA_GPIOR0 0x3e
+#else
+	#define __AVR_ATmega644__
+	#define ARDUIDIOT_PINS arduidiot_644
+	/*
+	 * A 'spurious' write to an AVR GPIO was inserted in the firmware
+	 * in the idle loop, and is trapped here; it allows the system
+	 * to 'sleep' a little and not eat 100% CPU on the host
+	 */
+	#define MEGA_GPIOR0 0x3e
+#endif
+
+#include "marlin/pins.h"
 #include "marlin/Configuration.h"
 
 /*
@@ -90,10 +112,11 @@ hotend_change_hook(
 		uint32_t value,
 		void * param)
 {
+	heatpot_p hot = param;
 //	printf("%s %d\n", __func__, value);
 //	pin_state = (pin_state & ~(1 << irq->irq)) | (value << irq->irq);
 	heatpot_tally(
-			&reprap.hotend,
+			hot,
 			TALLY_HOTBED,
 			value ? 1.0f : 0 );
 }
@@ -118,7 +141,7 @@ int avr_flash_fd = 0;
 
 // avr special flash initalization
 // here: open and map a file to enable a persistent storage for the flash memory
-void avr_special_init( avr_t * avr)
+void avr_special_init( avr_t * avr, void *data)
 {
 	// open the file
 	avr_flash_fd = open(avr_flash_path, O_RDWR|O_CREAT, 0644);
@@ -138,7 +161,7 @@ void avr_special_init( avr_t * avr)
 
 // avr special flash deinitalization
 // here: cleanup the persistent storage
-void avr_special_deinit( avr_t* avr)
+void avr_special_deinit( avr_t* avr, void *data)
 {
 	puts(__func__);
 	lseek(avr_flash_fd, SEEK_SET, 0);
@@ -151,7 +174,6 @@ void avr_special_deinit( avr_t* avr)
 	uart_pty_stop(&reprap.uart_pty);
 }
 
-#define MEGA644_GPIOR0 0x3e
 
 static void
 reprap_relief_callback(
@@ -185,17 +207,18 @@ reprap_init(
 	uart_pty_init(avr, &r->uart_pty);
 	uart_pty_connect(&r->uart_pty, '0');
 
-	thermistor_init(avr, &r->therm_hotend, 0,
+	thermistor_init(avr, &r->therm_hotend, 1,
 			(short*)TERMISTOR_TABLE(TEMP_SENSOR_0),
 			sizeof(TERMISTOR_TABLE(TEMP_SENSOR_0)) / sizeof(short) / 2,
 			OVERSAMPLENR, 25.0f);
-	thermistor_init(avr, &r->therm_hotbed, 2,
+	thermistor_init(avr, &r->therm_hotbed, 0,
 			(short*)TERMISTOR_TABLE(TEMP_SENSOR_BED),
 			sizeof(TERMISTOR_TABLE(TEMP_SENSOR_BED)) / sizeof(short) / 2,
 			OVERSAMPLENR, 30.0f);
-	thermistor_init(avr, &r->therm_spare, 1,
-			(short*)temptable_5, sizeof(temptable_5) / sizeof(short) / 2,
-			OVERSAMPLENR, 10.0f);
+	thermistor_init(avr, &r->therm_spare, 2,
+			(short*)TERMISTOR_TABLE(TEMP_SENSOR_1),
+			sizeof(TERMISTOR_TABLE(TEMP_SENSOR_1)) / sizeof(short) / 2,
+			OVERSAMPLENR, 25.0f);
 
 	heatpot_init(avr, &r->hotend, "hotend", 28.0f);
 	heatpot_init(avr, &r->hotbed, "hotbed", 25.0f);
@@ -210,48 +233,48 @@ reprap_init(
 			r->therm_hotbed.irq + IRQ_TERM_TEMP_VALUE_IN);
 
 	avr_irq_register_notify(
-			get_ardu_irq(avr, HEATER_0_PIN, arduidiot_644),
-			hotend_change_hook, NULL);
+			get_ardu_irq(avr, HEATER_0_PIN, ARDUIDIOT_PINS),
+			hotend_change_hook, &r->therm_hotend);
 	avr_irq_register_notify(
-			get_ardu_irq(avr, FAN_PIN, arduidiot_644),
+			get_ardu_irq(avr, FAN_PIN, ARDUIDIOT_PINS),
 			hotend_fan_change_hook, NULL);
 	avr_irq_register_notify(
-			get_ardu_irq(avr, HEATER_BED_PIN, arduidiot_644),
+			get_ardu_irq(avr, HEATER_BED_PIN, ARDUIDIOT_PINS),
 			hotbed_change_hook, NULL);
 
 	//avr_irq_register_notify()
 	float axis_pp_per_mm[4] = DEFAULT_AXIS_STEPS_PER_UNIT;	// from Marlin!
 	{
-		avr_irq_t * e = get_ardu_irq(avr, X_ENABLE_PIN, arduidiot_644);
-		avr_irq_t * s = get_ardu_irq(avr, X_STEP_PIN, arduidiot_644);
-		avr_irq_t * d = get_ardu_irq(avr, X_DIR_PIN, arduidiot_644);
-		avr_irq_t * m = get_ardu_irq(avr, X_MIN_PIN, arduidiot_644);
+		avr_irq_t * e = get_ardu_irq(avr, X_ENABLE_PIN, ARDUIDIOT_PINS);
+		avr_irq_t * s = get_ardu_irq(avr, X_STEP_PIN, ARDUIDIOT_PINS);
+		avr_irq_t * d = get_ardu_irq(avr, X_DIR_PIN, ARDUIDIOT_PINS);
+		avr_irq_t * m = get_ardu_irq(avr, X_MIN_PIN, ARDUIDIOT_PINS);
 
 		stepper_init(avr, &r->step_x, "X", axis_pp_per_mm[0], 100, 200, 0);
 		stepper_connect(&r->step_x, s, d, e, m, stepper_endstop_inverted);
 	}
 	{
-		avr_irq_t * e = get_ardu_irq(avr, Y_ENABLE_PIN, arduidiot_644);
-		avr_irq_t * s = get_ardu_irq(avr, Y_STEP_PIN, arduidiot_644);
-		avr_irq_t * d = get_ardu_irq(avr, Y_DIR_PIN, arduidiot_644);
-		avr_irq_t * m = get_ardu_irq(avr, Y_MIN_PIN, arduidiot_644);
+		avr_irq_t * e = get_ardu_irq(avr, Y_ENABLE_PIN, ARDUIDIOT_PINS);
+		avr_irq_t * s = get_ardu_irq(avr, Y_STEP_PIN, ARDUIDIOT_PINS);
+		avr_irq_t * d = get_ardu_irq(avr, Y_DIR_PIN, ARDUIDIOT_PINS);
+		avr_irq_t * m = get_ardu_irq(avr, Y_MIN_PIN, ARDUIDIOT_PINS);
 
 		stepper_init(avr, &r->step_y, "Y", axis_pp_per_mm[1], 100, 200, 0);
 		stepper_connect(&r->step_y, s, d, e, m, stepper_endstop_inverted);
 	}
 	{
-		avr_irq_t * e = get_ardu_irq(avr, Z_ENABLE_PIN, arduidiot_644);
-		avr_irq_t * s = get_ardu_irq(avr, Z_STEP_PIN, arduidiot_644);
-		avr_irq_t * d = get_ardu_irq(avr, Z_DIR_PIN, arduidiot_644);
-		avr_irq_t * m = get_ardu_irq(avr, Z_MIN_PIN, arduidiot_644);
+		avr_irq_t * e = get_ardu_irq(avr, Z_ENABLE_PIN, ARDUIDIOT_PINS);
+		avr_irq_t * s = get_ardu_irq(avr, Z_STEP_PIN, ARDUIDIOT_PINS);
+		avr_irq_t * d = get_ardu_irq(avr, Z_DIR_PIN, ARDUIDIOT_PINS);
+		avr_irq_t * m = get_ardu_irq(avr, Z_MIN_PIN, ARDUIDIOT_PINS);
 
 		stepper_init(avr, &r->step_z, "Z", axis_pp_per_mm[2], 20, 130, 0);
 		stepper_connect(&r->step_z, s, d, e, m, stepper_endstop_inverted);
 	}
 	{
-		avr_irq_t * e = get_ardu_irq(avr, E0_ENABLE_PIN, arduidiot_644);
-		avr_irq_t * s = get_ardu_irq(avr, E0_STEP_PIN, arduidiot_644);
-		avr_irq_t * d = get_ardu_irq(avr, E0_DIR_PIN, arduidiot_644);
+		avr_irq_t * e = get_ardu_irq(avr, E0_ENABLE_PIN, ARDUIDIOT_PINS);
+		avr_irq_t * s = get_ardu_irq(avr, E0_STEP_PIN, ARDUIDIOT_PINS);
+		avr_irq_t * d = get_ardu_irq(avr, E0_DIR_PIN, ARDUIDIOT_PINS);
 
 		stepper_init(avr, &r->step_e, "E", axis_pp_per_mm[3], 0, 0, 0);
 		stepper_connect(&r->step_e, s, d, e, NULL, 0);
@@ -273,7 +296,7 @@ int main(int argc, char *argv[])
 	for (int i = 1; i < argc; i++)
 		if (!strcmp(argv[i], "-d"))
 			debug++;
-	avr = avr_make_mcu_by_name("atmega644");
+	avr = avr_make_mcu_by_name("atmega2560");
 	if (!avr) {
 		fprintf(stderr, "%s: Error creating the AVR core\n", argv[0]);
 		exit(1);
@@ -288,7 +311,8 @@ int main(int argc, char *argv[])
 	avr->aref = avr->avcc = avr->vcc = 5 * 1000;	// needed for ADC
 
 	elf_firmware_t f;
-	const char * fname = "/opt/reprap/tvrrug/Marlin/Marlin/applet/Marlin.elf";
+//	const char * fname = "/opt/reprap/tvrrug/Marlin/Marlin/applet/Marlin.elf";
+	const char * fname = "marlin/marlin.elf";
 	// try to load an ELF file, before trying the .hex
 	if (elf_read_firmware(fname, &f) == 0) {
 		printf("firmware %s f=%d mmcu=%s\n", fname, (int)f.frequency, f.mmcu);
@@ -304,7 +328,8 @@ int main(int argc, char *argv[])
 			fprintf(stderr, "%s: Unable to load %s\n", argv[0], path);
 			exit(1);
 		}
-		printf("Firmware %04x(%04x in AVR talk): %d bytes (%d words)\n", base, base/2, size, size/2);
+		printf("Firmware %04x(%04x in AVR talk): %d bytes (%d words)\n",
+				base, base/2, size, size/2);
 		memcpy(avr->flash + base, boot, size);
 		free(boot);
 		avr->pc = base;
@@ -315,15 +340,17 @@ int main(int argc, char *argv[])
 	// even if not setup at startup, activate gdb if crashing
 	avr->gdb_port = 1234;
 	if (debug) {
-		printf("AVR is stopped, waiting on gdb on port %d. Use 'target remote :%d' in avr-gdb\n",
+		printf("AVR is stopped, waiting on gdb on port %d. "
+				"Use 'target remote :%d' in avr-gdb\n",
 				avr->gdb_port, avr->gdb_port);
 		avr->state = cpu_Stopped;
 		avr_gdb_init(avr);
 	}
 
 	// Marlin doesn't loop, sleep, so we don't know when it's idle
-	// I changed Marlin to do a spurious write to the GPIOR0 register so we can trap it
-	avr_register_io_write(avr, MEGA644_GPIOR0, reprap_relief_callback, NULL);
+	// I changed Marlin to do a spurious write to the GPIOR0 register
+	// so we can trap it
+	avr_register_io_write(avr, MEGA_GPIOR0, reprap_relief_callback, NULL);
 
 	reprap_init(avr, &reprap);
 

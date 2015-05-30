@@ -57,7 +57,7 @@ struct cairo_surface_t;
 
 #define DEBUG_SHADOWMAP	0
 
-int _w = 800, _h = 600;
+int _w = 1280, _h = 768;
 
 c3context_p c3 = NULL;
 c3context_p hud = NULL;
