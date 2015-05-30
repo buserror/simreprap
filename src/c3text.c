@@ -132,7 +132,8 @@ c3text_set_font(
 	str_p name = str_new(font_name);
 	c3font_p font = NULL;
 	for (int i = 0; i < m->fonts.count && !font; i++)
-		if (!str_cmp(m->fonts.e[i]->name, name) && m->fonts.e[i]->font->size == size)
+		if (!str_cmp(m->fonts.e[i]->name, name) &&
+				m->fonts.e[i]->font->size == size)
 			font = m->fonts.e[i];
 	if (!font)
 		font = c3font_new(m, font_name, size);

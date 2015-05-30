@@ -31,7 +31,7 @@
 #include "thermistor.h"
 
 /*
- * called the ADC could use a new value
+ * Called when the ADC could use a new value
  * The value returned is NOT in "ADC" mode, it's in millivolts
  */
 static void thermistor_in_hook(struct avr_irq_t * irq, uint32_t value, void * param)
@@ -39,7 +39,7 @@ static void thermistor_in_hook(struct avr_irq_t * irq, uint32_t value, void * pa
 	thermistor_p p = (thermistor_p)param;
 	avr_adc_mux_t v = *((avr_adc_mux_t*)&value);
 
-//	printf("%s(%2d/%2d)\n", __func__, p->adc_mux_number, v.src);
+	printf("%s(%2d/%2d)\n", __func__, p->adc_mux_number, v.src);
 
 	if (v.src != p->adc_mux_number)
 		return;

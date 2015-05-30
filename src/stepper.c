@@ -40,7 +40,8 @@ stepper_update_timer(
 	} m = { .f = p->position / p->steps_per_mm };
 //	printf("%s (%s) %3.4f\n", __func__, p->name, m.f);
 	avr_raise_irq(p->irq + IRQ_STEPPER_POSITION_OUT, m.i);
-	avr_raise_irq(p->irq + IRQ_STEPPER_ENDSTOP_OUT, p->position == p->endstop);
+	avr_raise_irq(p->irq + IRQ_STEPPER_ENDSTOP_OUT,
+			p->position == p->endstop);
 	return when + p->timer_period;
 }
 
@@ -51,7 +52,8 @@ stepper_dir_hook(
 		void * param )
 {
 	stepper_p p = (stepper_p)param;
-	printf("%s (%s) %d\n", __func__, p->name, value);
+	if (p->trace)
+		printf("%s (%s) %d\n", __func__, p->name, value);
 	p->dir = !!value;
 }
 
@@ -65,7 +67,8 @@ stepper_enable_hook(
 	p->enable = !!value;
 	printf("%s (%s) %d pos %.4f\n", __func__, p->name,
 			p->enable != 0, p->position / p->steps_per_mm);
-	avr_raise_irq(p->irq + IRQ_STEPPER_ENDSTOP_OUT, p->position == p->endstop);
+	avr_raise_irq(p->irq + IRQ_STEPPER_ENDSTOP_OUT,
+			p->position == p->endstop);
 }
 
 static void
@@ -114,7 +117,8 @@ stepper_init(
 	p->steps_per_mm = steps_per_mm;
 	p->position = start_position * p->steps_per_mm;
 	p->max_position = max_position * p->steps_per_mm;
-	p->endstop = endstop_position >= 0 ? endstop_position * p->steps_per_mm : 0;
+	p->endstop = endstop_position >= 0 ?
+			endstop_position * p->steps_per_mm : 0;
 }
 
 void
