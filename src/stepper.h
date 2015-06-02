@@ -58,6 +58,8 @@ stepper_init(
 
 enum {
 	stepper_endstop_inverted = (1 << 0),
+	stepper_enable_inverted = (1 << 1),
+	stepper_direction_inverted = (1 << 2),
 };
 void
 stepper_connect(

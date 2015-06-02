@@ -38,7 +38,8 @@ stepper_update_timer(
 		float f;
 		uint32_t i;
 	} m = { .f = p->position / p->steps_per_mm };
-//	printf("%s (%s) %3.4f\n", __func__, p->name, m.f);
+//	if (p->trace)
+//		printf("%s (%s) %3.4f\n", __func__, p->name, m.f);
 	avr_raise_irq(p->irq + IRQ_STEPPER_POSITION_OUT, m.i);
 	avr_raise_irq(p->irq + IRQ_STEPPER_ENDSTOP_OUT,
 			p->position == p->endstop);
@@ -133,13 +134,17 @@ stepper_connect(
 	avr_connect_irq(step, p->irq + IRQ_STEPPER_STEP_IN);
 	avr_connect_irq(dir, p->irq + IRQ_STEPPER_DIR_IN);
 	avr_connect_irq(enable, p->irq + IRQ_STEPPER_ENABLE_IN);
-	p->irq[IRQ_STEPPER_ENDSTOP_OUT].flags |= IRQ_STEPPER_POSITION_OUT;
+//	p->irq[IRQ_STEPPER_ENDSTOP_OUT].flags |= IRQ_STEPPER_POSITION_OUT;
 	p->irq[IRQ_STEPPER_ENDSTOP_OUT].flags |= IRQ_FLAG_FILTERED;
 	if (endstop) {
 		avr_connect_irq(p->irq + IRQ_STEPPER_ENDSTOP_OUT, endstop);
 		if (flags & stepper_endstop_inverted)
 			p->irq[IRQ_STEPPER_ENDSTOP_OUT].flags |= IRQ_FLAG_NOT;
 	}
+	if (stepper_enable_inverted)
+		 p->irq[IRQ_STEPPER_ENABLE_IN].flags |= IRQ_FLAG_NOT;
+	if (stepper_direction_inverted)
+		 p->irq[IRQ_STEPPER_DIR_IN].flags |= IRQ_FLAG_NOT;
 	p->timer_period = avr_usec_to_cycles(p->avr, 100000 / 1000); // 1ms
 	avr_cycle_timer_register(p->avr, p->timer_period, stepper_update_timer, p);
 }
