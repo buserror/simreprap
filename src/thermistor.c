@@ -34,23 +34,32 @@
  * Called when the ADC could use a new value
  * The value returned is NOT in "ADC" mode, it's in millivolts
  */
-static void thermistor_in_hook(struct avr_irq_t * irq, uint32_t value, void * param)
+static void thermistor_in_hook(
+		struct avr_irq_t * irq, uint32_t value, void * param)
 {
 	thermistor_p p = (thermistor_p)param;
-	avr_adc_mux_t v = *((avr_adc_mux_t*)&value);
-
-	printf("%s(%2d/%2d)\n", __func__, p->adc_mux_number, v.src);
+	union {
+		avr_adc_mux_t v;
+		uint32_t l;
+	} u = { .l = value };
+	avr_adc_mux_t v = u.v;
 
 	if (v.src != p->adc_mux_number)
 		return;
 
-	short *t = p->table;
-	for (int ei = 0; ei < p->table_entries; ei++, t += 2) {
+	short *t = p->table, *lt = NULL;
+	for (int ei = 0; ei < p->table_entries; ei++, lt = t, t += 2) {
 		if (t[1] <= p->current) {
-		//	printf("%s(%2d) %.2f matches %3dC is %d adc\n", __func__, v.src,
-		//			p->current, t[1], t[0] / p->oversampling);
+			short tt = t[0];
+			/* small linear regression between table samples */
+			if (ei > 0 && t[1] < p->current) {
+				short d_adc = t[0] - lt[0];
+				float d_temp = t[1] - lt[1];
+				float delta = p->current - t[1];
+				tt = lt[0] + (d_adc * (delta / d_temp));
+			}
 			avr_raise_irq(p->irq + IRQ_TERM_ADC_VALUE_OUT,
-						 ((t[0] / p->oversampling) * 5000) / 0x3ff);
+						 ((tt / p->oversampling) * 5000) / 0x3ff);
 			return;
 		}
 	}
@@ -58,7 +67,8 @@ static void thermistor_in_hook(struct avr_irq_t * irq, uint32_t value, void * pa
 			__func__, p->adc_mux_number, p->current);
 }
 
-static void thermistor_value_in_hook(struct avr_irq_t * irq, uint32_t value, void * param)
+static void thermistor_value_in_hook(
+		struct avr_irq_t * irq, uint32_t value, void * param)
 {
 	thermistor_p p = (thermistor_p)param;
 	float fv = ((float)value) / 256;
