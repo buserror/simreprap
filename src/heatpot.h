@@ -25,11 +25,24 @@
 
 #include "sim_irq.h"
 
+/* A 'heatpot' is a small system that keeps track of a running temperature
+ * and applies various 'bias' at regular interval. It always tries to
+ * move toward an 'ambiant' temperature and will settle there if no other
+ * bias is applied.
+ * If a bias is applied (for example, a positive bias for when a heater
+ * is on) the temperature will rise steadily, while still being dragged
+ * down by any other negative bias (drift toward ambiant, a fan etc)
+ *
+ * This is used to simulate the heated hotend and hotbeds
+ */
+
 enum {
 	IRQ_HEATPOT_TALLY = 0,		// heatpot_data_t
 	IRQ_HEATPOT_TEMP_OUT,		// Celcius * 256
 	IRQ_HEATPOT_COUNT
 };
+
+#define HEATPOT_RESAMPLE_US 100000 /* 100ms */
 
 typedef union {
 	int32_t sid : 8, cost;
@@ -41,7 +54,7 @@ typedef struct heatpot_t {
 	struct avr_t * avr;
 	char name[32];
 
-	struct { int sid; float cost; } tally[32];
+	struct { float cost; } tally[4];
 
 	float ambiant;
 	float current;
@@ -59,7 +72,7 @@ heatpot_init(
 void
 heatpot_tally(
 		heatpot_p p,
-		int sid,
+		uint8_t sid,
 		float cost );
 
 #endif /* __HEATPOT_H___ */

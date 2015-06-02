@@ -38,9 +38,8 @@ heatpot_evaluate_timer(
 
 	float weight = 0.0;
 
-	for (int si = 0; si < 32; si++)
-		if (p->tally[si].sid)
-			weight += p->tally[si].cost;
+	for (int si = 0; si < ARRAY_SIZE(p->tally); si++)
+		weight += p->tally[si].cost;
 
 	float delta = p->current - p->ambiant;
 	float noise = (float)((random() % 32) - 16) / 32.0;
@@ -54,7 +53,8 @@ heatpot_evaluate_timer(
 		cost = weight > 0 ? 0.1 : -0.1;
 	}
 	p->current += cost;
-//	printf("%s w=%.3f d=%.3f c=%.3f = %.3f\n", p->name, weight, delta, cost, p->current);
+//	printf("%s w=%.3f d=%.3f c=%.3f = %.3f\n", p->name,
+//		weight, delta, cost, p->current);
 
 	avr_raise_irq(p->irq + IRQ_HEATPOT_TEMP_OUT, p->current * 256);
 
@@ -90,7 +90,7 @@ heatpot_init(
 	p->irq = avr_alloc_irq(&avr->irq_pool, 0, IRQ_HEATPOT_COUNT, irq_names);
 	avr_irq_register_notify(p->irq + IRQ_HEATPOT_TALLY, heatpot_tally_in_hook, p);
 
-	p->cycle = avr_usec_to_cycles(avr, 100000 / 1 /*1000 */);
+	p->cycle = avr_usec_to_cycles(avr, HEATPOT_RESAMPLE_US);
 	avr_cycle_timer_register_usec(avr, p->cycle, heatpot_evaluate_timer, p);
 
 	p->ambiant = p->current = ambiant;
@@ -99,22 +99,8 @@ heatpot_init(
 void
 heatpot_tally(
 		heatpot_p p,
-		int sid,
+		uint8_t sid,
 		float cost )
 {
-	int f = -1, ei = -1;
-	for (int si = 0; si < 32 && f == -1; si++)
-		if (p->tally[si].sid == 0)
-			ei = ei == -1 ? si : ei;
-		else if (p->tally[si].sid == sid)
-			f = si;
-	if (f == -1) {
-		if (ei == -1) {
-			printf("%s(%s) no room for extra tally source id %d\n", __func__, p->name, sid);
-			return;
-		}
-		f = ei;
-	}
-	p->tally[f].sid = sid;
-	p->tally[f].cost = cost;
+	p->tally[sid].cost = cost;
 }
