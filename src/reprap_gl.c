@@ -200,9 +200,9 @@ static void
 _gl_display_cb(void)		/* function called whenever redisplay needed */
 {
 	c3vec3 headp = c3vec3f(
-			stepper_get_position_mm(&reprap.step_x),
-			stepper_get_position_mm(&reprap.step_y),
-			stepper_get_position_mm(&reprap.step_z));
+			stepper_get_position_mm(&reprap.stepper[AXIS_X]),
+			stepper_get_position_mm(&reprap.stepper[AXIS_Y]),
+			stepper_get_position_mm(&reprap.stepper[AXIS_Z]));
 	c3mat4 headmove = translation3D(headp);
 	c3transform_set(head->transform.e[0], &headmove);
 

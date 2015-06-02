@@ -73,10 +73,10 @@
  * these are the sources of heat and cold to register to the heatpots
  */
 enum {
-	TALLY_AMBIANT = 1,
+	TALLY_AMBIANT = 0,
 	TALLY_HOTEND_PWM,
-	TALLY_HOTBED,
 	TALLY_HOTEND_FAN,
+	TALLY_HOTBED = 1,
 };
 
 reprap_t reprap;
@@ -99,12 +99,9 @@ hotbed_change_hook(
 		uint32_t value,
 		void * param)
 {
+	heatpot_p hot = param;
 //	printf("%s %d\n", __func__, value);
-//	pin_state = (pin_state & ~(1 << irq->irq)) | (value << irq->irq);
-	heatpot_tally(
-			&reprap.hotbed,
-			TALLY_HOTEND_PWM,
-			value ? 1.0f : 0 );
+	heatpot_tally(hot, TALLY_HOTBED, value ? 1.6f : 0 );
 }
 static void
 hotend_change_hook(
@@ -114,11 +111,7 @@ hotend_change_hook(
 {
 	heatpot_p hot = param;
 //	printf("%s %d\n", __func__, value);
-//	pin_state = (pin_state & ~(1 << irq->irq)) | (value << irq->irq);
-	heatpot_tally(
-			hot,
-			TALLY_HOTBED,
-			value ? 1.0f : 0 );
+	heatpot_tally(hot, TALLY_HOTEND_PWM, value ? 1.6f : 0 );
 }
 static void
 hotend_fan_change_hook(
@@ -126,12 +119,9 @@ hotend_fan_change_hook(
 		uint32_t value,
 		void * param)
 {
-	printf("%s %d\n", __func__, value);
-//	pin_state = (pin_state & ~(1 << irq->irq)) | (value << irq->irq);
-	heatpot_tally(
-			&reprap.hotend,
-			TALLY_HOTEND_FAN,
-			value ? -0.05 : 0 );
+	heatpot_p hot = param;
+//	printf("%s %d\n", __func__, value);
+	heatpot_tally(hot, TALLY_HOTEND_FAN, value ? -0.05 : 0 );
 }
 
 
@@ -207,51 +197,73 @@ reprap_init(
 	uart_pty_init(avr, &r->uart_pty);
 	uart_pty_connect(&r->uart_pty, '0');
 
-	thermistor_init(avr, &r->therm_hotend, 1,
-			(short*)TERMISTOR_TABLE(TEMP_SENSOR_0),
-			sizeof(TERMISTOR_TABLE(TEMP_SENSOR_0)) / sizeof(short) / 2,
-			OVERSAMPLENR, 25.0f);
-	thermistor_init(avr, &r->therm_hotbed, 0,
-			(short*)TERMISTOR_TABLE(TEMP_SENSOR_BED),
-			sizeof(TERMISTOR_TABLE(TEMP_SENSOR_BED)) / sizeof(short) / 2,
-			OVERSAMPLENR, 30.0f);
-	thermistor_init(avr, &r->therm_spare, 2,
-			(short*)TERMISTOR_TABLE(TEMP_SENSOR_1),
-			sizeof(TERMISTOR_TABLE(TEMP_SENSOR_1)) / sizeof(short) / 2,
-			OVERSAMPLENR, 25.0f);
-
 	heatpot_init(avr, &r->hotend, "hotend", 28.0f);
 	heatpot_init(avr, &r->hotbed, "hotbed", 25.0f);
 
+	/* Add a constant drift toward ambiant temperature, this is
+	 * kept running all the time, and provide the 'cooling' effect
+	 * on the heatpot.
+	 * The heatpot is reevaluated very 100ms (aka HEATPOT_RESAMPLE_US)
+	 */
 	heatpot_tally(&r->hotend, TALLY_AMBIANT, -0.5f);
 	heatpot_tally(&r->hotbed, TALLY_AMBIANT, -0.3f);
 
-	/* connect heatpot temp output to thermistors */
+	/* HOTEND thermistor gets initialized, attached to a heatpot */
+	thermistor_init(avr, &r->therm_hotend, TEMP_0_PIN,
+			(short*)TERMISTOR_TABLE(TEMP_SENSOR_0),
+			sizeof(TERMISTOR_TABLE(TEMP_SENSOR_0)) / sizeof(short) / 2,
+			OVERSAMPLENR, 25.0f);
+	/* connect heatpot temp output to thermistor */
 	avr_connect_irq(r->hotend.irq + IRQ_HEATPOT_TEMP_OUT,
 			r->therm_hotend.irq + IRQ_TERM_TEMP_VALUE_IN);
+
+	/* HOTBED thermistor gets initialized, attached to a heatpot */
+	thermistor_init(avr, &r->therm_hotbed, TEMP_BED_PIN,
+			(short*)TERMISTOR_TABLE(TEMP_SENSOR_BED),
+			sizeof(TERMISTOR_TABLE(TEMP_SENSOR_BED)) / sizeof(short) / 2,
+			OVERSAMPLENR, 30.0f);
 	avr_connect_irq(r->hotbed.irq + IRQ_HEATPOT_TEMP_OUT,
 			r->therm_hotbed.irq + IRQ_TERM_TEMP_VALUE_IN);
 
+	/* SPARE thermistor gets initialized, attached to a heatpot */
+	thermistor_init(avr, &r->therm_spare, TEMP_1_PIN,
+			(short*)TERMISTOR_TABLE(TEMP_SENSOR_1),
+			sizeof(TERMISTOR_TABLE(TEMP_SENSOR_1)) / sizeof(short) / 2,
+			OVERSAMPLENR, 25.0f);
+	avr_connect_irq(r->hotend.irq + IRQ_HEATPOT_TEMP_OUT,
+			r->therm_spare.irq + IRQ_TERM_TEMP_VALUE_IN);
+
+/* This prints a meaningful message if PINS are not defined */
+#define ARDU(_pin) (_pin == -1 ? \
+			printf("%s:%d pin %s is undefined\n", \
+					__func__,__LINE__,#_pin), NULL : \
+		get_ardu_irq(avr, _pin, ARDUIDIOT_PINS))
+
 	avr_irq_register_notify(
-			get_ardu_irq(avr, HEATER_0_PIN, ARDUIDIOT_PINS),
-			hotend_change_hook, &r->therm_hotend);
+			ARDU(HEATER_0_PIN),
+			hotend_change_hook, &r->hotend);
 	avr_irq_register_notify(
-			get_ardu_irq(avr, FAN_PIN, ARDUIDIOT_PINS),
-			hotend_fan_change_hook, NULL);
-	avr_irq_register_notify(
-			get_ardu_irq(avr, HEATER_BED_PIN, ARDUIDIOT_PINS),
-			hotbed_change_hook, NULL);
+			ARDU(HEATER_BED_PIN),
+			hotbed_change_hook, &r->hotbed);
+	if (FAN_PIN != -1)
+		avr_irq_register_notify(
+				ARDU(FAN_PIN),
+				hotend_fan_change_hook, &r->hotend);
 
 	//avr_irq_register_notify()
-	float axis_pp_per_mm[4] = DEFAULT_AXIS_STEPS_PER_UNIT;	// from Marlin!
-	{
-		avr_irq_t * e = get_ardu_irq(avr, X_ENABLE_PIN, ARDUIDIOT_PINS);
-		avr_irq_t * s = get_ardu_irq(avr, X_STEP_PIN, ARDUIDIOT_PINS);
-		avr_irq_t * d = get_ardu_irq(avr, X_DIR_PIN, ARDUIDIOT_PINS);
-		avr_irq_t * m = get_ardu_irq(avr, X_MIN_PIN, ARDUIDIOT_PINS);
+	float axis_pp_per_mm[] = DEFAULT_AXIS_STEPS_PER_UNIT;	// from Marlin!
 
-		stepper_init(avr, &r->step_x, "X", axis_pp_per_mm[0], 100, 200, 0);
-		stepper_connect(&r->step_x, s, d, e, m, stepper_endstop_inverted);
+	{
+		avr_irq_t * e = ARDU(X_ENABLE_PIN);
+		avr_irq_t * s = ARDU(X_STEP_PIN);
+		avr_irq_t * d = ARDU(X_DIR_PIN);
+		avr_irq_t * m = X_MIN_PIN == -1 ? ARDU(X_MAX_PIN) : ARDU(X_MIN_PIN);
+
+		stepper_init(avr, &r->stepper[AXIS_X], "X", axis_pp_per_mm[0],
+				X_MAX_POS / 2, X_MAX_POS, X_MIN_PIN == -1 ? X_MAX_POS : 0);
+		stepper_connect(&r->stepper[AXIS_X], s, d, e, m,
+				stepper_endstop_inverted | stepper_enable_inverted|
+				stepper_direction_inverted);
 	}
 	{
 		avr_irq_t * e = get_ardu_irq(avr, Y_ENABLE_PIN, ARDUIDIOT_PINS);
@@ -259,8 +271,11 @@ reprap_init(
 		avr_irq_t * d = get_ardu_irq(avr, Y_DIR_PIN, ARDUIDIOT_PINS);
 		avr_irq_t * m = get_ardu_irq(avr, Y_MIN_PIN, ARDUIDIOT_PINS);
 
-		stepper_init(avr, &r->step_y, "Y", axis_pp_per_mm[1], 100, 200, 0);
-		stepper_connect(&r->step_y, s, d, e, m, stepper_endstop_inverted);
+		stepper_init(avr, &r->stepper[AXIS_Y], "Y", axis_pp_per_mm[1],
+				Y_MAX_POS / 2, Y_MAX_POS, 0);
+		stepper_connect(&r->stepper[AXIS_Y], s, d, e, m,
+				stepper_endstop_inverted | stepper_enable_inverted|
+				stepper_direction_inverted);
 	}
 	{
 		avr_irq_t * e = get_ardu_irq(avr, Z_ENABLE_PIN, ARDUIDIOT_PINS);
@@ -268,16 +283,20 @@ reprap_init(
 		avr_irq_t * d = get_ardu_irq(avr, Z_DIR_PIN, ARDUIDIOT_PINS);
 		avr_irq_t * m = get_ardu_irq(avr, Z_MIN_PIN, ARDUIDIOT_PINS);
 
-		stepper_init(avr, &r->step_z, "Z", axis_pp_per_mm[2], 20, 130, 0);
-		stepper_connect(&r->step_z, s, d, e, m, stepper_endstop_inverted);
+		stepper_init(avr, &r->stepper[AXIS_Z], "Z", axis_pp_per_mm[2], 20,
+				Z_MAX_POS, 0);
+		stepper_connect(&r->stepper[AXIS_Z], s, d, e, m,
+				stepper_endstop_inverted | stepper_enable_inverted|
+				stepper_direction_inverted);
 	}
 	{
 		avr_irq_t * e = get_ardu_irq(avr, E0_ENABLE_PIN, ARDUIDIOT_PINS);
 		avr_irq_t * s = get_ardu_irq(avr, E0_STEP_PIN, ARDUIDIOT_PINS);
 		avr_irq_t * d = get_ardu_irq(avr, E0_DIR_PIN, ARDUIDIOT_PINS);
 
-		stepper_init(avr, &r->step_e, "E", axis_pp_per_mm[3], 0, 0, 0);
-		stepper_connect(&r->step_e, s, d, e, NULL, 0);
+		stepper_init(avr, &r->stepper[AXIS_E], "E", axis_pp_per_mm[3], 0, 0, 0);
+		stepper_connect(&r->stepper[AXIS_E], s, d, e, NULL,
+				stepper_enable_inverted|stepper_direction_inverted);
 	}
 
 }

@@ -30,6 +30,13 @@
 #include "uart_pty.h"
 #include "sim_vcd_file.h"
 
+enum {
+	AXIS_X = 0,
+	AXIS_Y,
+	AXIS_Z,
+	AXIS_E,
+	AXIS_COUNT
+};
 typedef struct reprap_t {
 	struct avr_t *	avr;
 	thermistor_t	therm_hotend;
@@ -38,7 +45,7 @@ typedef struct reprap_t {
 	heatpot_t		hotend;
 	heatpot_t		hotbed;
 
-	stepper_t		step_x, step_y, step_z, step_e;
+	stepper_t		stepper[AXIS_COUNT];
 
 	uart_pty_t		uart_pty;
 	avr_vcd_t		vcd_file;
