@@ -34,6 +34,8 @@
 #include "sim_elf.h"
 #include "sim_hex.h"
 #include "sim_gdb.h"
+#include "avr_uart.h"
+#include "avr_twi.h"
 
 #include "reprap_gl.h"
 
@@ -83,11 +85,16 @@ reprap_t reprap;
 
 avr_t * avr = NULL;
 
+
+#include "marlin/thermistortables.h"
+const short temptable_1[][2] = THERMISTOR_1;
+
 // gnu hackery to make sure the parameter is expanded
 #define _TERMISTOR_TABLE(num) \
 		temptable_##num
+
 #define TERMISTOR_TABLE(num) \
-		_TERMISTOR_TABLE(num)
+		temptable_1
 
 /*
  * called when the AVR change any of the pins on port B
@@ -111,7 +118,7 @@ hotend_change_hook(
 {
 	heatpot_p hot = param;
 //	printf("%s %d\n", __func__, value);
-	heatpot_tally(hot, TALLY_HOTEND_PWM, value ? 1.6f : 0 );
+	heatpot_tally(hot, TALLY_HOTEND_PWM, value ? 2.0f : 0 );
 }
 static void
 hotend_fan_change_hook(
@@ -260,7 +267,7 @@ reprap_init(
 		avr_irq_t * m = X_MIN_PIN == -1 ? ARDU(X_MAX_PIN) : ARDU(X_MIN_PIN);
 
 		stepper_init(avr, &r->stepper[AXIS_X], "X", axis_pp_per_mm[0],
-				X_MAX_POS / 2, X_MAX_POS, X_MIN_PIN == -1 ? X_MAX_POS : 0);
+				X_MAX_POS / 2, X_MAX_POS, 0);
 		stepper_connect(&r->stepper[AXIS_X], s, d, e, m,
 				stepper_endstop_inverted | stepper_enable_inverted|
 				stepper_direction_inverted);
@@ -289,6 +296,7 @@ reprap_init(
 				stepper_endstop_inverted | stepper_enable_inverted|
 				stepper_direction_inverted);
 	}
+#if defined(E0_DIR_PIN) && E0_DIR_PIN != -1
 	{
 		avr_irq_t * e = get_ardu_irq(avr, E0_ENABLE_PIN, ARDUIDIOT_PINS);
 		avr_irq_t * s = get_ardu_irq(avr, E0_STEP_PIN, ARDUIDIOT_PINS);
@@ -298,7 +306,138 @@ reprap_init(
 		stepper_connect(&r->stepper[AXIS_E], s, d, e, NULL,
 				stepper_enable_inverted|stepper_direction_inverted);
 	}
+#else
+	{
+		avr_irq_t * e = get_ardu_irq(avr, Ec_ENABLE_PIN, ARDUIDIOT_PINS);
+		avr_irq_t * s = get_ardu_irq(avr, Ec_STEP_PIN, ARDUIDIOT_PINS);
+		avr_irq_t * d = get_ardu_irq(avr, Ec_DIR_PIN, ARDUIDIOT_PINS);
 
+		stepper_init(avr, &r->stepper[AXIS_CYAN], "CYAN", axis_pp_per_mm[3], 0, 0, 0);
+		stepper_connect(&r->stepper[AXIS_CYAN], s, d, e, NULL,
+				stepper_enable_inverted|stepper_direction_inverted);
+	}
+	{
+		avr_irq_t * e = get_ardu_irq(avr, Ey_ENABLE_PIN, ARDUIDIOT_PINS);
+		avr_irq_t * s = get_ardu_irq(avr, Ey_STEP_PIN, ARDUIDIOT_PINS);
+		avr_irq_t * d = get_ardu_irq(avr, Ey_DIR_PIN, ARDUIDIOT_PINS);
+
+		stepper_init(avr, &r->stepper[AXIS_YELLOW], "YELLOW", axis_pp_per_mm[3], 0, 0, 0);
+		stepper_connect(&r->stepper[AXIS_YELLOW], s, d, e, NULL,
+				stepper_enable_inverted|stepper_direction_inverted);
+	}
+	{
+		avr_irq_t * e = get_ardu_irq(avr, Em_ENABLE_PIN, ARDUIDIOT_PINS);
+		avr_irq_t * s = get_ardu_irq(avr, Em_STEP_PIN, ARDUIDIOT_PINS);
+		avr_irq_t * d = get_ardu_irq(avr, Em_DIR_PIN, ARDUIDIOT_PINS);
+
+		stepper_init(avr, &r->stepper[AXIS_MAGENTA], "MAGENTA", axis_pp_per_mm[3], 0, 0, 0);
+		stepper_connect(&r->stepper[AXIS_MAGENTA], s, d, e, NULL,
+				stepper_enable_inverted|stepper_direction_inverted);
+	}
+	{
+		avr_irq_t * e = get_ardu_irq(avr, Ek_ENABLE_PIN, ARDUIDIOT_PINS);
+		avr_irq_t * s = get_ardu_irq(avr, Ek_STEP_PIN, ARDUIDIOT_PINS);
+		avr_irq_t * d = get_ardu_irq(avr, Ek_DIR_PIN, ARDUIDIOT_PINS);
+
+		stepper_init(avr, &r->stepper[AXIS_KEY], "KEY", axis_pp_per_mm[3], 0, 0, 0);
+		stepper_connect(&r->stepper[AXIS_KEY], s, d, e, NULL,
+				stepper_enable_inverted|stepper_direction_inverted);
+	}
+	{
+		avr_irq_t * e = get_ardu_irq(avr, Ew_ENABLE_PIN, ARDUIDIOT_PINS);
+		avr_irq_t * s = get_ardu_irq(avr, Ew_STEP_PIN, ARDUIDIOT_PINS);
+		avr_irq_t * d = get_ardu_irq(avr, Ew_DIR_PIN, ARDUIDIOT_PINS);
+
+		stepper_init(avr, &r->stepper[AXIS_WHITE], "WHITE", axis_pp_per_mm[3], 0, 0, 0);
+		stepper_connect(&r->stepper[AXIS_WHITE], s, d, e, NULL,
+				stepper_enable_inverted|stepper_direction_inverted);
+	}
+	{
+		avr_irq_t * e = get_ardu_irq(avr, MIXER_ENABLE_PIN, ARDUIDIOT_PINS);
+		avr_irq_t * s = get_ardu_irq(avr, MIXER_STEP_PIN, ARDUIDIOT_PINS);
+		avr_irq_t * d = get_ardu_irq(avr, MIXER_DIR_PIN, ARDUIDIOT_PINS);
+
+		stepper_init(avr, &r->stepper[AXIS_MIXER], "MIXER", axis_pp_per_mm[3], 0, 0, 0);
+		stepper_connect(&r->stepper[AXIS_MIXER], s, d, e, NULL,
+				stepper_enable_inverted|stepper_direction_inverted);
+	}
+	{
+		avr_irq_t * e = get_ardu_irq(avr, ER_ENABLE_PIN, ARDUIDIOT_PINS);
+		avr_irq_t * s = get_ardu_irq(avr, ER_STEP_PIN, ARDUIDIOT_PINS);
+		avr_irq_t * d = get_ardu_irq(avr, ER_DIR_PIN, ARDUIDIOT_PINS);
+
+		stepper_init(avr, &r->stepper[AXIS_RETRACT], "RETRACT", axis_pp_per_mm[3], 0, 0, 0);
+		stepper_connect(&r->stepper[AXIS_RETRACT], s, d, e, NULL,
+				stepper_enable_inverted|stepper_direction_inverted);
+	}
+#endif
+
+	avr_vcd_init(r->avr, "simreprap_trace.vcd", &r->vcd_file, 1000 /*usec*/);
+	avr_vcd_add_signal(&r->vcd_file, ARDU(HEATER_0_PIN), 1, "HEATER_0_PIN");
+	avr_vcd_add_signal(&r->vcd_file, ARDU(HEATER_BED_PIN), 1, "HEATER_BED_PIN");
+
+	const char * nm[IRQ_STEPPER_COUNT] = {
+			"DIR", "STEP", "E",
+	};
+	for (int i = 0; i < AXIS_COUNT; i++) {
+		stepper_p s = &r->stepper[i];
+		for (int qi = 0; qi < IRQ_STEPPER_COUNT; qi++) {
+			if (!nm[qi])
+				continue;
+			char name[32];
+			sprintf(name, "%s_%s", s->name, nm[qi]);
+			avr_vcd_add_signal(&r->vcd_file, s->irq + qi, 1, name);
+		}
+	}
+	avr_irq_t * irq;
+	irq = avr_get_interrupt_irq(r->avr, AVR_INT_ANY);
+	irq[0].flags |= IRQ_FLAG_FILTERED;
+	irq[1].flags |= IRQ_FLAG_FILTERED;
+	avr_vcd_add_signal(&r->vcd_file, irq, 1, "I_G_PENDING");
+	avr_vcd_add_signal(&r->vcd_file, irq + 1, 8, "I_G_RUNNING");
+
+#define USART0_RX_vect_num 25
+	irq = avr_get_interrupt_irq(r->avr, USART0_RX_vect_num);
+	irq[0].flags |= IRQ_FLAG_FILTERED;
+	irq[1].flags |= IRQ_FLAG_FILTERED;
+	avr_vcd_add_signal(&r->vcd_file, irq, 1, "I_UART0_RX_P");
+	avr_vcd_add_signal(&r->vcd_file, irq + 1, 1, "I_UART0_RX_R");
+
+#define TIMER1_COMPA_vect_num	17
+	irq = avr_get_interrupt_irq(r->avr, TIMER1_COMPA_vect_num);
+	irq[0].flags |= IRQ_FLAG_FILTERED;
+	irq[1].flags |= IRQ_FLAG_FILTERED;
+	avr_vcd_add_signal(&r->vcd_file, irq, 1, "I_T1CA_P");
+	avr_vcd_add_signal(&r->vcd_file, irq + 1, 1, "I_T1CA_R");
+
+#define TIMER3_COMPA_vect_num	32
+	irq = avr_get_interrupt_irq(r->avr, TIMER3_COMPA_vect_num);
+	irq[0].flags |= IRQ_FLAG_FILTERED;
+	irq[1].flags |= IRQ_FLAG_FILTERED;
+	avr_vcd_add_signal(&r->vcd_file, irq, 1, "I_T3CA_P");
+	avr_vcd_add_signal(&r->vcd_file, irq + 1, 1, "I_T3CA_R");
+
+#define TIMER3_COMPC_vect_num	34
+	irq = avr_get_interrupt_irq(r->avr, TIMER3_COMPC_vect_num);
+	irq[0].flags |= IRQ_FLAG_FILTERED;
+	irq[1].flags |= IRQ_FLAG_FILTERED;
+	avr_vcd_add_signal(&r->vcd_file, irq, 1, "I_T3CC_P");
+	avr_vcd_add_signal(&r->vcd_file, irq + 1, 1, "I_T3CC_R");
+
+#define TIMER0_COMPA_vect_num	21
+	irq = avr_get_interrupt_irq(r->avr, TIMER0_COMPA_vect_num);
+	irq[0].flags |= IRQ_FLAG_FILTERED;
+	irq[1].flags |= IRQ_FLAG_FILTERED;
+	avr_vcd_add_signal(&r->vcd_file, irq, 1, "I_T0CA_P");
+	avr_vcd_add_signal(&r->vcd_file, irq + 1, 1, "I_T0CA_R");
+
+	avr_vcd_add_signal(&r->vcd_file,
+			avr_io_getirq(r->avr, AVR_IOCTL_UART_GETIRQ('0'), UART_IRQ_INPUT), 8,
+			"UART_IN");
+
+	avr_vcd_add_signal(&r->vcd_file,
+			avr_io_getirq(r->avr, AVR_IOCTL_TWI_GETIRQ(0), TWI_IRQ_STATUS), 8,
+			"TWI_STATE");
 }
 
 int main(int argc, char *argv[])
@@ -328,6 +467,7 @@ int main(int argc, char *argv[])
 	avr_init(avr);
 	avr->frequency = 20000000;
 	avr->aref = avr->avcc = avr->vcc = 5 * 1000;	// needed for ADC
+	avr->log = 1;
 
 	elf_firmware_t f;
 //	const char * fname = "/opt/reprap/tvrrug/Marlin/Marlin/applet/Marlin.elf";

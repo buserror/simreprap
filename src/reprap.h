@@ -35,6 +35,13 @@ enum {
 	AXIS_Y,
 	AXIS_Z,
 	AXIS_E,
+	AXIS_MIXER = AXIS_E,
+	AXIS_CYAN,
+	AXIS_MAGENTA,
+	AXIS_YELLOW,
+	AXIS_KEY,
+	AXIS_WHITE,
+	AXIS_RETRACT,
 	AXIS_COUNT
 };
 typedef struct reprap_t {

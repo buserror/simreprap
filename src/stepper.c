@@ -79,12 +79,14 @@ stepper_step_hook(
 		void * param )
 {
 	stepper_p p = (stepper_p)param;
+	printf("%s (%s) %d pos %.4f\n", __func__, p->name,
+			p->enable != 0, p->position / p->steps_per_mm);
 	if (!p->enable)
 		return;
 	if (value)
 		return;
 	p->position += !p->dir && p->position == 0 ? 0 : p->dir ? 1 : -1;
-	if (p->endstop && p->position < p->endstop)
+	if (p->endstop && p->position > p->endstop)
 		p->position = p->endstop;
 	if (p->max_position > 0 && p->position > p->max_position)
 		p->position = p->max_position;
@@ -134,7 +136,7 @@ stepper_connect(
 	avr_connect_irq(step, p->irq + IRQ_STEPPER_STEP_IN);
 	avr_connect_irq(dir, p->irq + IRQ_STEPPER_DIR_IN);
 	avr_connect_irq(enable, p->irq + IRQ_STEPPER_ENABLE_IN);
-//	p->irq[IRQ_STEPPER_ENDSTOP_OUT].flags |= IRQ_STEPPER_POSITION_OUT;
+
 	p->irq[IRQ_STEPPER_ENDSTOP_OUT].flags |= IRQ_FLAG_FILTERED;
 	if (endstop) {
 		avr_connect_irq(p->irq + IRQ_STEPPER_ENDSTOP_OUT, endstop);

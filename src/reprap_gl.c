@@ -57,7 +57,7 @@ struct cairo_surface_t;
 
 #define DEBUG_SHADOWMAP	0
 
-int _w = 1280, _h = 768;
+int _w = 1280, _h = 1024;
 
 c3context_p c3 = NULL;
 c3context_p hud = NULL;
@@ -142,11 +142,11 @@ _gl_key_cb(
 			break;
 		case 'r':
 			printf("Starting VCD trace; press 's' to stop\n");
-		//	avr_vcd_start(&vcd_file);
+			avr_vcd_start(&reprap.vcd_file);
 			break;
 		case 's':
 			printf("Stopping VCD trace\n");
-		//	avr_vcd_stop(&vcd_file);
+			avr_vcd_stop(&reprap.vcd_file);
 			break;
 		case '1':
 			if (fbo_c3->geometry.mat.program)
@@ -761,8 +761,8 @@ gl_init(
     	c3text_style_t style = { .align = C3TEXT_ALIGN_LEFT, .mutable = 0 };
 
     	c3text_set_font(t, "gfx/VeraMono.ttf", 18, style);
-    	c3text_set(t, c3vec2f(1, 20), "Hello World!");
-    	t->geometry.mat.color = c3vec4f(0.5,0.5,0.5,1.0);
+    	c3text_set(t, c3vec2f(128, 120), "Hello World!");
+    	t->geometry.mat.color = c3vec4f(1,1,1,1.0);
     }
 	return 1;
 }
