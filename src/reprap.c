@@ -467,32 +467,38 @@ int main(int argc, char *argv[])
 	avr_init(avr);
 	avr->frequency = 20000000;
 	avr->aref = avr->avcc = avr->vcc = 5 * 1000;	// needed for ADC
-	avr->log = 3;
+	avr->log = 1;
 
 	elf_firmware_t f;
-//	const char * fname = "/opt/reprap/tvrrug/Marlin/Marlin/applet/Marlin.elf";
-	const char * fname = "marlin/marlin.elf";
+	const char * fname = "marlin/marlin.hex";
 	// try to load an ELF file, before trying the .hex
-	if (elf_read_firmware(fname, &f) == 0) {
+	if ((!strcmp(fname + strlen(fname)-4, ".axf") ||
+			!strcmp(fname + strlen(fname)-4, ".elf")) &&
+			elf_read_firmware(fname, &f) == 0) {
 		printf("firmware %s f=%d mmcu=%s\n", fname, (int)f.frequency, f.mmcu);
 		avr_load_firmware(avr, &f);
-	} else {
-		char path[1024];
-		uint32_t base, size;
-//		snprintf(path, sizeof(path), "%s/%s", pwd, "ATmegaBOOT_168_atmega328.ihex");
-		strcpy(path, "marlin/Marlin.hex");
-//		strcpy(path, "marlin/bootloader-644-20MHz.hex");
-		uint8_t * boot = read_ihex_file(path, &size, &base);
-		if (!boot) {
-			fprintf(stderr, "%s: Unable to load %s\n", argv[0], path);
+	} else if (!strcmp(fname + strlen(fname)-4, ".hex")) {
+		ihex_chunk_p chunks = NULL;
+		int count = read_ihex_chunks(fname, &chunks);
+
+		if (count <= 0) {
+			fprintf(stderr, "%s: Unable to load %s\n", argv[0], fname);
 			exit(1);
 		}
-		printf("Firmware %04x(%04x in AVR talk): %d bytes (%d words)\n",
-				base, base/2, size, size/2);
-		memcpy(avr->flash + base, boot, size);
-		free(boot);
-		avr->pc = base;
-		avr->codeend = avr->flashend;
+		for (int i = 0; i < count; i++) {
+			printf("%s %05x(%05x in AVR talk): %d bytes (%d words)\n", fname,
+					chunks[i].baseaddr, chunks[i].baseaddr/2,
+					chunks[i].size, chunks[i].size/2);
+			memcpy(avr->flash + chunks[i].baseaddr, chunks[i].data,
+					chunks[i].size);
+			if (chunks[i].baseaddr > avr->reset_pc)
+				avr->pc = avr->reset_pc = chunks[i].baseaddr;
+			if (chunks[i].baseaddr + chunks[i].size > avr->codeend)
+				avr->codeend = chunks[i].baseaddr + chunks[i].size;
+		}
+		free_ihex_chunks(chunks);
+	} else {
+		printf("No idea how to load '%s'\n", fname);
 	}
 	//avr->trace = 1;
 
