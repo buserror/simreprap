@@ -519,10 +519,31 @@ int main(int argc, char *argv[])
 
 	reprap_init(avr, &reprap);
 
-	gl_init(argc, argv);
 	pthread_t run;
 	pthread_create(&run, NULL, avr_run_thread, NULL);
-
-	gl_runloop();
+	if (0) {
+		gl_init(argc, argv);
+		gl_runloop();
+	} else {
+		
+		while (1) {
+			char buf[10];
+			fgets(buf, 10, stdin);
+			switch (buf[0]) {
+				case 'q':
+					avr_vcd_stop(&reprap.vcd_file);
+					exit(0);
+					break;
+				case 'r':
+					printf("Starting VCD trace; press 's' to stop\n");
+					avr_vcd_start(&reprap.vcd_file);
+					break;
+				case 's':
+					printf("Stopping VCD trace\n");
+					avr_vcd_stop(&reprap.vcd_file);
+					break;
+			}
+		}
+	}
 
 }
