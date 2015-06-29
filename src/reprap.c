@@ -43,8 +43,8 @@
 #include "reprap.h"
 #include "arduidiot_pins.h"
 
+#define PRINTER PP_COPE
 #define PROGMEM
-
 #define MB(board) (MOTHERBOARD==BOARD_##board)
 
 #if (MOTHERBOARD == 632)
@@ -442,6 +442,8 @@ reprap_init(
 
 int main(int argc, char *argv[])
 {
+	int trace = 0;
+
 	char path[256];
 	strcpy(path, argv[0]);
 	strcpy(path, dirname(path));
@@ -454,6 +456,8 @@ int main(int argc, char *argv[])
 	for (int i = 1; i < argc; i++)
 		if (!strcmp(argv[i], "-d"))
 			debug++;
+		else if (!strcmp(argv[i], "-t"))
+			trace++;
 	avr = avr_make_mcu_by_name("atmega2560");
 	if (!avr) {
 		fprintf(stderr, "%s: Error creating the AVR core\n", argv[0]);
@@ -465,7 +469,8 @@ int main(int argc, char *argv[])
 	avr->custom.init = avr_special_init;
 	avr->custom.deinit = avr_special_deinit;
 	avr_init(avr);
-	avr->frequency = 20000000;
+//	avr->frequency = 20000000;
+	avr->frequency = 16000000;
 	avr->aref = avr->avcc = avr->vcc = 5 * 1000;	// needed for ADC
 	avr->log = 1;
 
@@ -500,7 +505,7 @@ int main(int argc, char *argv[])
 	} else {
 		printf("No idea how to load '%s'\n", fname);
 	}
-	//avr->trace = 1;
+	avr->trace = trace;
 
 	// even if not setup at startup, activate gdb if crashing
 	avr->gdb_port = 1234;

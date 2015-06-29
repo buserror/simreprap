@@ -45,7 +45,7 @@ FTC	  = ${shell PATH="$(PATH):/usr/X11/bin" which freetype-config}
 # for the Open Motion Controller board
 #CPPFLAGS := -DMOTHERBOARD=91
 
-CPPFLAGS := -DMOTHERBOARD=632
+CPPFLAGS := -DMOTHERBOARD=632 -DPRINTER=PP_COPE
 
 # libdevil-dev provides IL.pc
 CPPFLAGS += ${shell pkg-config --cflags IL 2>/dev/null}
