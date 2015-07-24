@@ -42,6 +42,7 @@ enum {
 	AXIS_KEY,
 	AXIS_WHITE,
 	AXIS_RETRACT,
+	AXIS_PLATFORM,
 	AXIS_COUNT
 };
 typedef struct reprap_t {

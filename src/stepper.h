@@ -31,6 +31,7 @@ enum {
 	IRQ_STEPPER_ENABLE_IN,
 	IRQ_STEPPER_POSITION_OUT,
 	IRQ_STEPPER_ENDSTOP_OUT,
+	IRQ_STEPPER_ZERO_OUT,
 	IRQ_STEPPER_COUNT
 };
 
@@ -60,6 +61,7 @@ enum {
 	stepper_endstop_inverted = (1 << 0),
 	stepper_enable_inverted = (1 << 1),
 	stepper_direction_inverted = (1 << 2),
+	stepper_zero_inverted = (1 << 3),
 };
 void
 stepper_connect(
@@ -68,6 +70,7 @@ stepper_connect(
 		avr_irq_t *	dir,
 		avr_irq_t *	enable,
 		avr_irq_t *	endstop,
+		avr_irq_t *	zero,
 		uint16_t flags);
 
 float

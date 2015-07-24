@@ -38,11 +38,13 @@ stepper_update_timer(
 		float f;
 		uint32_t i;
 	} m = { .f = p->position / p->steps_per_mm };
-//	if (p->trace)
-//		printf("%s (%s) %3.4f\n", __func__, p->name, m.f);
+	if (p->trace)
+		printf("%s (%s) %3.4f\n", __func__, p->name, m.f);
 	avr_raise_irq(p->irq + IRQ_STEPPER_POSITION_OUT, m.i);
 	avr_raise_irq(p->irq + IRQ_STEPPER_ENDSTOP_OUT,
 			p->position == p->endstop);
+	avr_raise_irq(p->irq + IRQ_STEPPER_ZERO_OUT,
+			p->position == 0.0f);
 	return when + p->timer_period;
 }
 
@@ -53,7 +55,7 @@ stepper_dir_hook(
 		void * param )
 {
 	stepper_p p = (stepper_p)param;
-	if (p->trace)
+//	if (p->trace)
 		printf("%s (%s) %d\n", __func__, p->name, value);
 	p->dir = !!value;
 }
@@ -86,8 +88,12 @@ stepper_step_hook(
 	if (value)
 		return;
 	p->position += !p->dir && p->position == 0 ? 0 : p->dir ? 1 : -1;
-	if (p->endstop && p->position > p->endstop)
+	if ((p->endstop > 0 && p->position > p->endstop) ||
+		(p->endstop < 0 && p->position < p->endstop)) {
 		p->position = p->endstop;
+		printf("%s (%s) ENDSTOP pos %.4f\n", __func__, p->name,
+				p->position / p->steps_per_mm);
+	}
 	if (p->max_position > 0 && p->position > p->max_position)
 		p->position = p->max_position;
 }
@@ -98,6 +104,7 @@ static const char * irq_names[IRQ_STEPPER_COUNT] = {
 	[IRQ_STEPPER_ENABLE_IN] = "1<stepper.enable",
 	[IRQ_STEPPER_POSITION_OUT] = "32<stepper.position",
 	[IRQ_STEPPER_ENDSTOP_OUT] = "1<stepper.endstop",
+	[IRQ_STEPPER_ZERO_OUT] = "1<stepper.zero",
 };
 
 void
@@ -131,6 +138,7 @@ stepper_connect(
 		avr_irq_t *	dir,
 		avr_irq_t *	enable,
 		avr_irq_t *	endstop,
+		avr_irq_t *	zero,
 		uint16_t flags)
 {
 	avr_connect_irq(step, p->irq + IRQ_STEPPER_STEP_IN);
@@ -142,6 +150,11 @@ stepper_connect(
 		avr_connect_irq(p->irq + IRQ_STEPPER_ENDSTOP_OUT, endstop);
 		if (flags & stepper_endstop_inverted)
 			p->irq[IRQ_STEPPER_ENDSTOP_OUT].flags |= IRQ_FLAG_NOT;
+	}
+	if (zero) {
+		avr_connect_irq(p->irq + IRQ_STEPPER_ZERO_OUT, zero);
+		if (flags & stepper_zero_inverted)
+			p->irq[IRQ_STEPPER_ZERO_OUT].flags |= IRQ_FLAG_NOT;
 	}
 	if (stepper_enable_inverted)
 		 p->irq[IRQ_STEPPER_ENABLE_IN].flags |= IRQ_FLAG_NOT;

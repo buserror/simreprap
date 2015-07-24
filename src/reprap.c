@@ -267,8 +267,8 @@ reprap_init(
 		avr_irq_t * m = X_MIN_PIN == -1 ? ARDU(X_MAX_PIN) : ARDU(X_MIN_PIN);
 
 		stepper_init(avr, &r->stepper[AXIS_X], "X", axis_pp_per_mm[0],
-				X_MAX_POS / 2, X_MAX_POS, 0);
-		stepper_connect(&r->stepper[AXIS_X], s, d, e, m,
+				X_MAX_POS / 2, X_MAX_POS, X_MAX_POS-1);
+		stepper_connect(&r->stepper[AXIS_X], s, d, e, m, NULL,
 				stepper_endstop_inverted | stepper_enable_inverted|
 				stepper_direction_inverted);
 	}
@@ -279,8 +279,8 @@ reprap_init(
 		avr_irq_t * m = get_ardu_irq(avr, Y_MIN_PIN, ARDUIDIOT_PINS);
 
 		stepper_init(avr, &r->stepper[AXIS_Y], "Y", axis_pp_per_mm[1],
-				Y_MAX_POS / 2, Y_MAX_POS, 0);
-		stepper_connect(&r->stepper[AXIS_Y], s, d, e, m,
+				Y_MAX_POS / 2, Y_MAX_POS, -1);
+		stepper_connect(&r->stepper[AXIS_Y], s, d, e, m, NULL,
 				stepper_endstop_inverted | stepper_enable_inverted|
 				stepper_direction_inverted);
 	}
@@ -291,10 +291,11 @@ reprap_init(
 		avr_irq_t * m = get_ardu_irq(avr, Z_MIN_PIN, ARDUIDIOT_PINS);
 
 		stepper_init(avr, &r->stepper[AXIS_Z], "Z", axis_pp_per_mm[2], 20,
-				Z_MAX_POS, 0);
+				Z_MAX_POS, Z_MAX_POS-1);
 		stepper_connect(&r->stepper[AXIS_Z], s, d, e, m,
+			get_ardu_irq(avr, Z_PROBE_PIN, ARDUIDIOT_PINS),
 				stepper_endstop_inverted | stepper_enable_inverted|
-				stepper_direction_inverted);
+				stepper_direction_inverted|stepper_zero_inverted);
 	}
 #if defined(E0_DIR_PIN) && E0_DIR_PIN != -1
 	{
@@ -303,17 +304,29 @@ reprap_init(
 		avr_irq_t * d = get_ardu_irq(avr, E0_DIR_PIN, ARDUIDIOT_PINS);
 
 		stepper_init(avr, &r->stepper[AXIS_E], "E", axis_pp_per_mm[3], 0, 0, 0);
-		stepper_connect(&r->stepper[AXIS_E], s, d, e, NULL,
+		stepper_connect(&r->stepper[AXIS_E], s, d, e, NULL, NULL,
 				stepper_enable_inverted|stepper_direction_inverted);
 	}
 #else
+	{
+		avr_irq_t * e = get_ardu_irq(avr, PLATFORM_ENABLE_PIN, ARDUIDIOT_PINS);
+		avr_irq_t * s = get_ardu_irq(avr, PLATFORM_STEP_PIN, ARDUIDIOT_PINS);
+		avr_irq_t * d = get_ardu_irq(avr, PLATFORM_DIR_PIN, ARDUIDIOT_PINS);
+		avr_irq_t * m = get_ardu_irq(avr, Z_PROBE_PIN, ARDUIDIOT_PINS);
+
+		stepper_init(avr, &r->stepper[AXIS_PLATFORM], "PLATFORM", axis_pp_per_mm[2], 10,
+				20, 20 - 1);
+		stepper_connect(&r->stepper[AXIS_PLATFORM], s, d, e, m, NULL,
+				stepper_endstop_inverted | stepper_enable_inverted|
+				stepper_direction_inverted);
+	}
 	{
 		avr_irq_t * e = get_ardu_irq(avr, Ec_ENABLE_PIN, ARDUIDIOT_PINS);
 		avr_irq_t * s = get_ardu_irq(avr, Ec_STEP_PIN, ARDUIDIOT_PINS);
 		avr_irq_t * d = get_ardu_irq(avr, Ec_DIR_PIN, ARDUIDIOT_PINS);
 
 		stepper_init(avr, &r->stepper[AXIS_CYAN], "CYAN", axis_pp_per_mm[3], 0, 0, 0);
-		stepper_connect(&r->stepper[AXIS_CYAN], s, d, e, NULL,
+		stepper_connect(&r->stepper[AXIS_CYAN], s, d, e, NULL, NULL,
 				stepper_enable_inverted|stepper_direction_inverted);
 	}
 	{
@@ -322,7 +335,7 @@ reprap_init(
 		avr_irq_t * d = get_ardu_irq(avr, Ey_DIR_PIN, ARDUIDIOT_PINS);
 
 		stepper_init(avr, &r->stepper[AXIS_YELLOW], "YELLOW", axis_pp_per_mm[3], 0, 0, 0);
-		stepper_connect(&r->stepper[AXIS_YELLOW], s, d, e, NULL,
+		stepper_connect(&r->stepper[AXIS_YELLOW], s, d, e, NULL, NULL,
 				stepper_enable_inverted|stepper_direction_inverted);
 	}
 	{
@@ -331,7 +344,7 @@ reprap_init(
 		avr_irq_t * d = get_ardu_irq(avr, Em_DIR_PIN, ARDUIDIOT_PINS);
 
 		stepper_init(avr, &r->stepper[AXIS_MAGENTA], "MAGENTA", axis_pp_per_mm[3], 0, 0, 0);
-		stepper_connect(&r->stepper[AXIS_MAGENTA], s, d, e, NULL,
+		stepper_connect(&r->stepper[AXIS_MAGENTA], s, d, e, NULL, NULL,
 				stepper_enable_inverted|stepper_direction_inverted);
 	}
 	{
@@ -340,7 +353,7 @@ reprap_init(
 		avr_irq_t * d = get_ardu_irq(avr, Ek_DIR_PIN, ARDUIDIOT_PINS);
 
 		stepper_init(avr, &r->stepper[AXIS_KEY], "KEY", axis_pp_per_mm[3], 0, 0, 0);
-		stepper_connect(&r->stepper[AXIS_KEY], s, d, e, NULL,
+		stepper_connect(&r->stepper[AXIS_KEY], s, d, e, NULL, NULL,
 				stepper_enable_inverted|stepper_direction_inverted);
 	}
 	{
@@ -349,7 +362,7 @@ reprap_init(
 		avr_irq_t * d = get_ardu_irq(avr, Ew_DIR_PIN, ARDUIDIOT_PINS);
 
 		stepper_init(avr, &r->stepper[AXIS_WHITE], "WHITE", axis_pp_per_mm[3], 0, 0, 0);
-		stepper_connect(&r->stepper[AXIS_WHITE], s, d, e, NULL,
+		stepper_connect(&r->stepper[AXIS_WHITE], s, d, e, NULL, NULL,
 				stepper_enable_inverted|stepper_direction_inverted);
 	}
 	{
@@ -358,7 +371,7 @@ reprap_init(
 		avr_irq_t * d = get_ardu_irq(avr, MIXER_DIR_PIN, ARDUIDIOT_PINS);
 
 		stepper_init(avr, &r->stepper[AXIS_MIXER], "MIXER", axis_pp_per_mm[3], 0, 0, 0);
-		stepper_connect(&r->stepper[AXIS_MIXER], s, d, e, NULL,
+		stepper_connect(&r->stepper[AXIS_MIXER], s, d, e, NULL, NULL,
 				stepper_enable_inverted|stepper_direction_inverted);
 	}
 	{
@@ -367,7 +380,7 @@ reprap_init(
 		avr_irq_t * d = get_ardu_irq(avr, ER_DIR_PIN, ARDUIDIOT_PINS);
 
 		stepper_init(avr, &r->stepper[AXIS_RETRACT], "RETRACT", axis_pp_per_mm[3], 0, 0, 0);
-		stepper_connect(&r->stepper[AXIS_RETRACT], s, d, e, NULL,
+		stepper_connect(&r->stepper[AXIS_RETRACT], s, d, e, NULL, NULL,
 				stepper_enable_inverted|stepper_direction_inverted);
 	}
 #endif
@@ -450,7 +463,7 @@ int main(int argc, char *argv[])
 	strcpy(path, dirname(path));
 	printf("Stripped base directory to '%s'\n", path);
 	chdir(path);
-
+	
 	int debug = 0;
 
 	for (int i = 1; i < argc; i++)
@@ -472,7 +485,7 @@ int main(int argc, char *argv[])
 //	avr->frequency = 20000000;
 	avr->frequency = 16000000;
 	avr->aref = avr->avcc = avr->vcc = 5 * 1000;	// needed for ADC
-	avr->log = 1;
+	avr->log = 2;
 
 	elf_firmware_t f;
 	const char * fname = "marlin/marlin.hex";
@@ -530,7 +543,6 @@ int main(int argc, char *argv[])
 		gl_init(argc, argv);
 		gl_runloop();
 	} else {
-		
 		while (1) {
 			char buf[10];
 			fgets(buf, 10, stdin);
