@@ -456,6 +456,8 @@ reprap_init(
 int main(int argc, char *argv[])
 {
 	int trace = 0;
+	int debug = 0;
+	int nogui = 0;
 
 	char path[256];
 	strcpy(path, argv[0]);
@@ -463,14 +465,27 @@ int main(int argc, char *argv[])
 	strcpy(path, dirname(path));
 	printf("Stripped base directory to '%s'\n", path);
 	chdir(path);
-	
-	int debug = 0;
 
-	for (int i = 1; i < argc; i++)
+	char fname[1024] = "";
+
+	for (int i = 1; i < argc; ++i)
 		if (!strcmp(argv[i], "-d"))
 			debug++;
 		else if (!strcmp(argv[i], "-t"))
 			trace++;
+		else if (!strcmp(argv[i], "-n"))
+			nogui++;
+		else {
+			strncpy(fname, argv[i], 1024);
+			printf("Loading: %s\n", fname);
+		}
+
+	if (0 == strlen(fname)) {
+		printf("Missing filename.\n");
+		printf("Usage: %s [-d -t -n...] filename.elf|filename.hex\n", argv[0]);
+		exit(2);
+	}
+
 	avr = avr_make_mcu_by_name("atmega2560");
 	if (!avr) {
 		fprintf(stderr, "%s: Error creating the AVR core\n", argv[0]);
@@ -488,7 +503,7 @@ int main(int argc, char *argv[])
 	avr->log = 2;
 
 	elf_firmware_t f;
-	const char * fname = "marlin/marlin.hex";
+
 	// try to load an ELF file, before trying the .hex
 	if ((!strcmp(fname + strlen(fname)-4, ".axf") ||
 			!strcmp(fname + strlen(fname)-4, ".elf")) &&
@@ -539,10 +554,11 @@ int main(int argc, char *argv[])
 
 	pthread_t run;
 	pthread_create(&run, NULL, avr_run_thread, NULL);
-	if (1) {
+	if (0 == nogui) {
 		gl_init(argc, argv);
 		gl_runloop();
 	} else {
+		bool recording = false;
 		while (1) {
 			char buf[10];
 			fgets(buf, 10, stdin);
@@ -552,12 +568,22 @@ int main(int argc, char *argv[])
 					exit(0);
 					break;
 				case 'r':
-					printf("Starting VCD trace; press 's' to stop\n");
-					avr_vcd_start(&reprap.vcd_file);
+					if (!recording) {
+						printf("Starting VCD trace; press 's' to stop\n");
+						avr_vcd_start(&reprap.vcd_file);
+						recording = true;
+					} else {
+						printf("Already recording! Press 's' to stop first...\n");
+					}
 					break;
 				case 's':
-					printf("Stopping VCD trace\n");
-					avr_vcd_stop(&reprap.vcd_file);
+					if (recording) {
+						printf("Stopping VCD trace\n");
+						avr_vcd_stop(&reprap.vcd_file);
+						recording = false;
+					} else {
+						printf("Not recording! Press 'r' to start recording first!\n");
+					}
 					break;
 			}
 		}
