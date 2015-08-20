@@ -87,7 +87,7 @@ avr_t * avr = NULL;
 
 
 #include "marlin/thermistortables.h"
-const short temptable_1[][2] = THERMISTOR_1;
+const short temptable_1[][2] = THERMISTOR_EPCOS_100K;
 
 // gnu hackery to make sure the parameter is expanded
 #define _TERMISTOR_TABLE(num) \
@@ -539,7 +539,7 @@ int main(int argc, char *argv[])
 
 	pthread_t run;
 	pthread_create(&run, NULL, avr_run_thread, NULL);
-	if (0) {
+	if (1) {
 		gl_init(argc, argv);
 		gl_runloop();
 	} else {
