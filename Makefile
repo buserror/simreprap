@@ -49,11 +49,11 @@ FTC	  = ${shell PATH="$(PATH):/usr/X11/bin" which freetype-config}
 CPPFLAGS := -DMOTHERBOARD=632 -DPRINTER=PP_COPE
 
 # libdevil-dev provides IL.pc
-CPPFLAGS += ${shell pkg-config --cflags IL 2>/dev/null}
+CPPFLAGS += ${shell pkg-config --cflags IL cairo 2>/dev/null}
 CPPFLAGS += ${shell $(FTC) --cflags}
 CPPFLAGS += ${patsubst %,-I%,${subst :, ,${IPATH}}}
 
-LDFLAGS = ${shell pkg-config --libs IL 2>/dev/null}
+LDFLAGS = ${shell pkg-config --libs IL cairo 2>/dev/null}
 LDFLAGS += -lpthread -lutil -ldl
 LDFLAGS += -lm
 LDFLAGS += -Wl,-rpath ${SIMAVR_R}/simavr/${OBJ} -L${SIMAVR_R}/simavr/${OBJ} 
@@ -79,6 +79,7 @@ ${board} : ${OBJ}/uart_pty.o
 ${board} : ${OBJ}/thermistor.o
 ${board} : ${OBJ}/heatpot.o
 ${board} : ${OBJ}/stepper.o
+${board} : ${OBJ}/pathplotter.o
 ${board} : ${OBJ}/${target}.o
 ${board} : ${OBJ}/${target}_gl.o
 

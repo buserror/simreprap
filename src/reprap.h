@@ -29,6 +29,9 @@
 #include "stepper.h"
 #include "uart_pty.h"
 #include "sim_vcd_file.h"
+#include "pathplotter.h"
+
+struct pathplot_t;
 
 enum {
 	AXIS_X = 0,
@@ -57,6 +60,7 @@ typedef struct reprap_t {
 
 	uart_pty_t		uart_pty;
 	avr_vcd_t		vcd_file;
+	pathplot_t 		pathplot;
 } reprap_t, *reprap_p;
 
 #endif /* __REPRAP_H___ */

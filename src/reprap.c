@@ -451,6 +451,9 @@ reprap_init(
 	avr_vcd_add_signal(&r->vcd_file,
 			avr_io_getirq(r->avr, AVR_IOCTL_TWI_GETIRQ(0), TWI_IRQ_STATUS), 8,
 			"TWI_STATE");
+
+	/* Init the path plotter engine */
+	pathplot_init(avr, &r->pathplot, r->stepper);
 }
 
 int main(int argc, char *argv[])
@@ -583,6 +586,23 @@ int main(int argc, char *argv[])
 						recording = false;
 					} else {
 						printf("Not recording! Press 'r' to start recording first!\n");
+					}
+					break;
+				case 'p':
+					if (reprap.pathplot.last_cycle) {
+						printf("Already recording a path; press 'l' to stop\n");
+					} else {
+						printf("Now recording X&Y as a path; press 'l' to stop\n");
+						pathplot_start(&reprap.pathplot);
+					}
+					break;
+				case 'l':
+					if (!reprap.pathplot.last_cycle) {
+						printf("Not currently recording a path; press 'p' to start\n");
+					} else {
+						printf("Generating SVG from recording; migth take a while\n");
+						pathplot_stop(&reprap.pathplot, "pathplot.svg");
+						printf("SVG Generated\n");
 					}
 					break;
 			}
