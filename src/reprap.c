@@ -37,6 +37,7 @@
 #include "avr_uart.h"
 #include "avr_twi.h"
 
+#include "history_avr.h"
 #include "reprap_gl.h"
 
 #include "button.h"
@@ -84,6 +85,7 @@ enum {
 reprap_t reprap;
 
 avr_t * avr = NULL;
+elf_firmware_t code = {0};
 
 
 #include "marlin/thermistortables.h"
@@ -456,6 +458,81 @@ reprap_init(
 	pathplot_init(avr, &r->pathplot, r->stepper);
 }
 
+bool recording = false;
+static int
+_cmd_record(
+		wordexp_t * l)
+{
+	if (!recording) {
+		printf("Starting VCD trace; press 's' to stop\n");
+		avr_vcd_start(&reprap.vcd_file);
+		recording = true;
+	} else {
+		printf("Already recording! Press 's' to stop first...\n");
+	}
+	return 0;
+}
+
+static const history_cmd_t cmd_record = {
+	.names = { "record", "r", "vcd", },
+	.usage = "start recording the VCD file",
+	.help = "start recording the VCD file",
+	.parameter_map = 0,
+	.execute = _cmd_record,
+};
+HISTORY_CMD_REGISTER(cmd_record);
+
+static int
+_cmd_stop(
+		wordexp_t * l)
+{
+	if (!recording && !reprap.pathplot.last_cycle) {
+		printf("Not recording Anything! Press 'r' or 'p' first!\n");
+	}
+	if (recording) {
+		printf("Stopping VCD trace\n");
+		avr_vcd_stop(&reprap.vcd_file);
+		recording = false;
+	}
+	if (reprap.pathplot.last_cycle) {
+		printf("Generating SVG from recording; migth take a while\n");
+		pathplot_stop(&reprap.pathplot, "pathplot.svg");
+		printf("SVG Generated\n");
+	}
+	return 0;
+}
+
+static const history_cmd_t cmd_stop = {
+	.names = { "stop", "s", },
+	.usage = "stop recording the VCD/SVG file",
+	.help = "stop recording the VCD or SVG file",
+	.parameter_map = 0,
+	.execute = _cmd_stop,
+};
+HISTORY_CMD_REGISTER(cmd_stop);
+
+static int
+_cmd_plot(
+		wordexp_t * l)
+{
+	if (reprap.pathplot.last_cycle) {
+		printf("Already recording a path; press 'l' to stop\n");
+	} else {
+		printf("Now recording X&Y as a path; press 'l' to stop\n");
+		pathplot_start(&reprap.pathplot);
+	}
+	return 0;
+}
+
+static const history_cmd_t cmd_plot = {
+	.names = { "plot", "pl" },
+	.usage = "start recording Steppers in a SVG file",
+	.help = "start recording Steppers in a SVG file",
+	.parameter_map = 0,
+	.execute = _cmd_plot,
+};
+HISTORY_CMD_REGISTER(cmd_plot);
+
 int main(int argc, char *argv[])
 {
 	int trace = 0;
@@ -513,6 +590,21 @@ int main(int argc, char *argv[])
 			elf_read_firmware(fname, &f) == 0) {
 		printf("firmware %s f=%d mmcu=%s\n", fname, (int)f.frequency, f.mmcu);
 		avr_load_firmware(avr, &f);
+		code = f; // global
+
+#if 1
+		printf("RAMEND %d 0x%04x\n", avr->ramend, avr->ramend);
+		for (int i = 0; i < code.symbolcount; i++) {
+			if ((code.symbol[i]->addr >> 16) == 0x80 &&
+					strncmp(code.symbol[i]->symbol, "__", 2) &&
+					code.symbol[i]->symbol[0] != ' ' &&
+					strcmp(code.symbol[i]->symbol, "_edata") &&
+					strcmp(code.symbol[i]->symbol, "_end"))
+				printf("%05x %s\n", code.symbol[i]->addr & 0xfffff,
+						code.symbol[i]->symbol);
+		}
+#endif
+
 	} else if (!strcmp(fname + strlen(fname)-4, ".hex")) {
 		ihex_chunk_p chunks = NULL;
 		int count = read_ihex_chunks(fname, &chunks);
@@ -555,58 +647,17 @@ int main(int argc, char *argv[])
 
 	reprap_init(avr, &reprap);
 
+	history_avr_init();
+
 	pthread_t run;
 	pthread_create(&run, NULL, avr_run_thread, NULL);
+
 	if (0 == nogui) {
 		gl_init(argc, argv);
 		gl_runloop();
 	} else {
-		bool recording = false;
 		while (1) {
-			char buf[10];
-			fgets(buf, 10, stdin);
-			switch (buf[0]) {
-				case 'q':
-					avr_vcd_stop(&reprap.vcd_file);
-					exit(0);
-					break;
-				case 'r':
-					if (!recording) {
-						printf("Starting VCD trace; press 's' to stop\n");
-						avr_vcd_start(&reprap.vcd_file);
-						recording = true;
-					} else {
-						printf("Already recording! Press 's' to stop first...\n");
-					}
-					break;
-				case 's':
-					if (recording) {
-						printf("Stopping VCD trace\n");
-						avr_vcd_stop(&reprap.vcd_file);
-						recording = false;
-					} else {
-						printf("Not recording! Press 'r' to start recording first!\n");
-					}
-					break;
-				case 'p':
-					if (reprap.pathplot.last_cycle) {
-						printf("Already recording a path; press 'l' to stop\n");
-					} else {
-						printf("Now recording X&Y as a path; press 'l' to stop\n");
-						pathplot_start(&reprap.pathplot);
-					}
-					break;
-				case 'l':
-					if (!reprap.pathplot.last_cycle) {
-						printf("Not currently recording a path; press 'p' to start\n");
-					} else {
-						printf("Generating SVG from recording; migth take a while\n");
-						pathplot_stop(&reprap.pathplot, "pathplot.svg");
-						printf("SVG Generated\n");
-					}
-					break;
-			}
+			history_avr_idle();
 		}
 	}
-
 }

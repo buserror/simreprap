@@ -80,6 +80,11 @@ ${board} : ${OBJ}/thermistor.o
 ${board} : ${OBJ}/heatpot.o
 ${board} : ${OBJ}/stepper.o
 ${board} : ${OBJ}/pathplotter.o
+${board} : ${OBJ}/history.o
+${board} : ${OBJ}/history_cmd.o
+${board} : ${OBJ}/history_avr.o
+${board} : ${OBJ}/hcmd_adc.o
+${board} : ${OBJ}/hcmd_symbols.o
 ${board} : ${OBJ}/${target}.o
 ${board} : ${OBJ}/${target}_gl.o
 
