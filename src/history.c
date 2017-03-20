@@ -49,6 +49,7 @@ tty_raw(void)
 	raw.c_lflag &= ~(ECHO | ICANON | IEXTEN | ISIG);
 
 	/* control chars - set return condition: min number of bytes and timer */
+#if 0
 	raw.c_cc[VMIN] = 5;
 	raw.c_cc[VTIME] = 8; /* after 5 bytes or .8 seconds
 	 after first byte seen      */
@@ -56,6 +57,7 @@ tty_raw(void)
 	raw.c_cc[VTIME] = 0; /* immediate - anything       */
 	raw.c_cc[VMIN] = 2;
 	raw.c_cc[VTIME] = 0; /* after two bytes, no timer  */
+#endif
 	raw.c_cc[VMIN] = 0;
 	raw.c_cc[VTIME] = 8; /* after a byte or .8 seconds */
 
