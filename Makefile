@@ -40,7 +40,8 @@ VPATH += ${SIMAVR_R}/examples/parts
 VPATH += ${SIMAVR_R}/examples/shared
 
 # requires libfreetype6-dev
-FTC	  = ${shell PATH="$(PATH):/usr/X11/bin" which freetype-config}
+#FTC	  = ${shell PATH="$(PATH):/usr/X11/bin" which freetype-config}
+FTC	  = pkg-config freetype2
 
 # for the Open Motion Controller board
 CPPFLAGS := -DMOTHERBOARD=91
@@ -80,10 +81,13 @@ build-libc3:
 	$(MAKE) -C $(LIBC3) CC="$(CC)" CFLAGS="$(CFLAGS)"
 build-ftgl:
 	$(MAKE) -C $(FTGL) CC="$(CC)" CPPFLAGS="$(CPPFLAGS)" \
-		CFLAGS="$(CFLAGS)" lib
+		CFLAGS="$(CFLAGS)" freetype-gl
 
-${target}:  build-simavr build-libc3 build-ftgl ${board}
+${target}: obj_dir build-simavr build-libc3 build-ftgl ${board}
 	@echo $@ done
+
+obj_dir:
+	mkdir -p ${OBJ}
 
 clean: clean-${OBJ}
 	rm -rf *.a *.axf ${target} *.vcd
