@@ -281,8 +281,8 @@ int main(int argc, char *argv[])
 //	snprintf(avr_flash_path, sizeof(avr_flash_path), "%s/%s", pwd, "simduino_flash.bin");
 	strcpy(avr_flash_path,  "reprap_flash.bin");
 	// register our own functions
-	avr->special_init = avr_special_init;
-	avr->special_deinit = avr_special_deinit;
+	avr->custom.init = avr_special_init;
+	avr->custom.deinit = avr_special_deinit;
 	avr_init(avr);
 	avr->frequency = 20000000;
 	avr->aref = avr->avcc = avr->vcc = 5 * 1000;	// needed for ADC

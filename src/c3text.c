@@ -173,7 +173,8 @@ c3text_add(
 		glyph = gl;
 		gc++;
 		origin.x += kerning;
-        kerning = texture_glyph_get_kerning(glyph, s[i]);
+		kerning = texture_glyph_get_kerning(glyph, s[i]);
+	}
 
         int x0  = (int)( origin.x + glyph->offset_x );
         int y0  = (int)( origin.y - glyph->offset_y );
@@ -194,7 +195,7 @@ c3text_add(
         	c3tex_array_add(&t->geometry.textures, *(c3vec2*)&vertices[vi][3]);
         	c3colorf_array_add(&t->geometry.colorf, color);
         }
-        for (int vi = 0; vi < 6; vi++)
+        for (int vi = 0; vi < 6; vi++) {
         	c3indices_array_add(&t->geometry.indices, basev + indices[vi]);
 		origin.x += glyph->advance_x;
 	}
